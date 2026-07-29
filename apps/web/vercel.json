@@ -2,13 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "comment": "Proxy the API through this domain so the session cookie stays first-party. Replace the host with your Render URL, then set VITE_API_URL=/trpc.",
       "source": "/trpc/:path*",
       "destination": "https://REPLACE-ME.onrender.com/trpc/:path*"
     },
     {
-      "comment": "Single-page app: every other path is handled by the client router.",
-      "source": "/((?!assets/).*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
