@@ -48,8 +48,16 @@ a demo that silently fails on someone's iPhone is worse than no demo.
 | Health Check Path | `/health` |
 | Instance Type | **Starter ($7)** — see note below |
 
-**Root Directory must stay blank.** This is a pnpm workspace; pointing Render at
-`apps/api` hides `pnpm-workspace.yaml` and the install fails.
+**Root Directory must stay blank.** Render resolves the start command relative
+to it, so anything set here is prepended. Setting it to `apps/web` produces:
+
+```
+Error: Cannot find module '/opt/render/project/src/apps/web/apps/api/src/index.ts'
+```
+
+If you would rather set it, use `apps/api` and drop the prefix from the start
+command (`node --experimental-transform-types src/index.ts`). The cost is that
+Render then only auto-deploys on changes inside that directory.
 
 **There is no build step.** The API runs TypeScript directly via Node's type
 transformation, so `pnpm run build` is wrong here — it would try to build the
