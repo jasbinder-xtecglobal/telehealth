@@ -44,8 +44,16 @@ function Root() {
             transformer: superjson,
             // The session lives in an httpOnly cookie, so it is never readable
             // from JavaScript — it has to be sent by the browser instead.
+            //
+            // The timeout matters: without it, an API host that accepts the
+            // connection but never answers leaves every query pending forever
+            // and the app renders a loading state with no error to diagnose.
             fetch: (url, options) =>
-              fetch(url, { ...options, credentials: "include" }),
+              fetch(url, {
+                ...options,
+                credentials: "include",
+                signal: options?.signal ?? AbortSignal.timeout(15_000),
+              }),
           }),
         }),
       ],

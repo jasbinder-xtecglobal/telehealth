@@ -16,7 +16,7 @@ import { ConsultConsole } from "@/features/consult/routes/ConsultConsole.tsx";
 import { PatientDetail } from "@/features/queue/routes/PatientDetail.tsx";
 import { WaitingRoom } from "@/features/queue/routes/WaitingRoom.tsx";
 import { AppShell } from "@/shared/layout/AppShell.tsx";
-import { useTRPC } from "@/shared/lib/trpc.ts";
+import { API_URL, useTRPC } from "@/shared/lib/trpc.ts";
 import { Spinner } from "@/shared/ui/index.tsx";
 
 /**
@@ -39,6 +39,33 @@ function RequireAuth({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-full items-center justify-center">
         <Spinner />
+      </div>
+    );
+  }
+
+  // Distinguish "not signed in" from "cannot reach the API". Without this the
+  // second case silently redirects to a login screen that also cannot work.
+  if (session.isError) {
+    return (
+      <div className="flex h-full items-center justify-center bg-slate-50 p-6">
+        <div className="max-w-md rounded-lg border border-red-200 bg-white p-6">
+          <h1 className="mb-2 text-base font-semibold text-red-800">
+            Cannot reach the API
+          </h1>
+          <p className="mb-3 text-sm text-muted">{session.error.message}</p>
+          <p className="mb-4 text-xs text-muted">
+            Requests are going to <code className="font-mono">{API_URL}</code>.
+            If that is a relative path, check the proxy rewrite in{" "}
+            <code className="font-mono">vercel.json</code> names the correct API
+            host.
+          </p>
+          <button
+            onClick={() => session.refetch()}
+            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-slate-50"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
