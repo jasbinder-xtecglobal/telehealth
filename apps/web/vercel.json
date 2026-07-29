@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/trpc/:path*",
-      "destination": "https://REPLACE-ME.onrender.com/trpc/:path*"
+      "destination": "https://telehealth-cbq2.onrender.com/trpc/:path*"
     },
     {
       "source": "/:path*",
