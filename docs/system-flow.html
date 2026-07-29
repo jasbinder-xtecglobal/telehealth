@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>After-Hours Telehealth Platform — System Flow &amp; Delivery Plan</title>
+<style>
+  :root{
+    --ink:#0b1f33;
+    --navy:#123a5c;
+    --navy-2:#1c5480;
+    --teal:#0e7c86;
+    --teal-soft:#e7f4f5;
+    --amber:#a86a12;
+    --amber-soft:#fdf5e6;
+    --red:#a8332a;
+    --red-soft:#fbeceb;
+    --green:#2f6b4f;
+    --green-soft:#eaf4ef;
+    --slate:#4a5b6c;
+    --muted:#6b7c8d;
+    --line:#dde5ec;
+    --line-2:#eef3f7;
+    --bg:#ffffff;
+    --bg-soft:#f6f9fb;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    font-size:10.5pt;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:190mm; margin:0 auto; padding:16mm 12mm;}
+
+  /* ---------- typography ---------- */
+  h1{font-size:26pt; line-height:1.15; margin:0 0 10px; letter-spacing:-.5px; font-weight:650; color:var(--navy);}
+  h2{
+    font-size:15pt; margin:0 0 4px; font-weight:640; color:var(--navy);
+    letter-spacing:-.2px;
+  }
+  h3{font-size:11.5pt; margin:22px 0 8px; font-weight:640; color:var(--ink);}
+  h4{font-size:10pt; margin:16px 0 6px; font-weight:640; color:var(--slate); text-transform:uppercase; letter-spacing:.6px;}
+  p{margin:0 0 10px;}
+  ul,ol{margin:0 0 10px; padding-left:18px;}
+  li{margin:0 0 4px;}
+  strong{font-weight:640;}
+  code{font-family:Consolas,"SF Mono",Menlo,monospace; font-size:.88em; background:var(--bg-soft); border:1px solid var(--line); border-radius:3px; padding:1px 4px;}
+
+  /* ---------- cover ---------- */
+  .cover{
+    border-top:5px solid var(--teal);
+    padding-top:26px; margin-bottom:34px;
+  }
+  .eyebrow{
+    font-size:8.5pt; font-weight:700; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--teal); margin-bottom:14px;
+  }
+  .lede{font-size:12pt; color:var(--slate); max-width:150mm; line-height:1.6; margin-bottom:18px;}
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:0; border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line); margin-top:22px;
+  }
+  .meta-row div{flex:1 1 25%; padding:12px 14px 12px 0;}
+  .meta-row .k{font-size:7.8pt; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; margin-bottom:3px;}
+  .meta-row .v{font-size:10pt; font-weight:600; color:var(--ink);}
+
+  /* ---------- section ---------- */
+  section{margin:0 0 30px;}
+  .sec-head{
+    display:flex; align-items:baseline; gap:12px;
+    border-bottom:2px solid var(--navy); padding-bottom:7px; margin-bottom:14px;
+  }
+  .sec-num{
+    font-size:9pt; font-weight:700; color:#fff; background:var(--navy);
+    min-width:26px; height:22px; border-radius:3px;
+    display:inline-flex; align-items:center; justify-content:center; letter-spacing:.5px;
+  }
+  .sec-sub{font-size:9.5pt; color:var(--muted); margin:0 0 14px;}
+
+  /* ---------- chain flow ---------- */
+  .chain{display:flex; align-items:stretch; gap:0; margin:14px 0 6px; flex-wrap:nowrap;}
+  .chain .node{
+    flex:1 1 0; min-width:0; background:var(--bg-soft); border:1px solid var(--line);
+    border-radius:5px; padding:10px 11px; position:relative; margin-right:16px;
+  }
+  .chain .node:last-child{margin-right:0;}
+  .chain .node::after{
+    content:""; position:absolute; right:-16px; top:50%; transform:translateY(-50%);
+    width:0; height:0; border-left:8px solid var(--teal);
+    border-top:6px solid transparent; border-bottom:6px solid transparent;
+  }
+  .chain .node:last-child::after{display:none;}
+  .chain .n{font-size:7.5pt; font-weight:700; color:var(--teal); letter-spacing:.9px; text-transform:uppercase; display:block; margin-bottom:3px;}
+  .chain .t{font-size:9.5pt; font-weight:640; line-height:1.3; margin-bottom:3px; color:var(--ink);}
+  .chain .d{font-size:8.3pt; color:var(--muted); line-height:1.4;}
+
+  /* ---------- swimlane ---------- */
+  .lanes{border:1px solid var(--line); border-radius:6px; overflow:hidden; margin:14px 0;}
+  .lane{display:flex; border-bottom:1px solid var(--line);}
+  .lane:last-child{border-bottom:0;}
+  .lane-label{
+    flex:0 0 34mm; background:var(--navy); color:#fff; padding:11px 12px;
+    font-size:9pt; font-weight:640; display:flex; align-items:center; line-height:1.3;
+  }
+  .lane:nth-child(even) .lane-label{background:var(--navy-2);}
+  .lane-body{flex:1; padding:9px 12px; background:#fff; display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .lane:nth-child(even) .lane-body{background:var(--bg-soft);}
+  .step{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:3px; padding:5px 9px; font-size:8.6pt; line-height:1.35; color:var(--ink);
+  }
+  .step.sys{border-left-color:var(--muted); color:var(--slate);}
+  .step.crit{border-left-color:var(--red);}
+  .arrow{color:var(--muted); font-size:9pt; font-weight:700;}
+
+  /* ---------- state machine ---------- */
+  .states{display:flex; flex-wrap:wrap; gap:9px; margin:14px 0;}
+  .state{
+    border:1px solid var(--line); border-radius:5px; padding:9px 12px; background:#fff;
+    flex:1 1 30%; min-width:52mm;
+  }
+  .state .sname{font-size:9.5pt; font-weight:660; color:var(--navy); margin-bottom:3px;}
+  .state .sdesc{font-size:8.4pt; color:var(--muted); line-height:1.4;}
+  .state.terminal{background:var(--teal-soft); border-color:#b9dcdf;}
+  .state.terminal .sname{color:var(--teal);}
+
+  /* ---------- callout ---------- */
+  .callout{
+    border-left:4px solid var(--teal); background:var(--teal-soft);
+    padding:12px 15px; border-radius:0 5px 5px 0; margin:14px 0; font-size:9.7pt;
+  }
+  .callout.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .callout.crit{border-left-color:var(--red); background:var(--red-soft);}
+  .callout .ctitle{font-weight:660; margin-bottom:4px; font-size:9.7pt;}
+  .callout p:last-child{margin-bottom:0;}
+
+  /* ---------- tables ---------- */
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:9.2pt;}
+  th{
+    text-align:left; background:var(--navy); color:#fff; font-weight:620;
+    padding:8px 10px; font-size:8.5pt; letter-spacing:.4px; text-transform:uppercase;
+    border:1px solid var(--navy);
+  }
+  td{padding:7px 10px; border:1px solid var(--line); vertical-align:top; line-height:1.45;}
+  tbody tr:nth-child(even) td{background:var(--bg-soft);}
+  td.nowrap{white-space:nowrap;}
+
+  /* ---------- pills ---------- */
+  .pill{
+    display:inline-block; font-size:7.6pt; font-weight:700; letter-spacing:.5px;
+    padding:2px 7px; border-radius:9px; text-transform:uppercase; white-space:nowrap;
+  }
+  .p-crit{background:var(--red-soft); color:var(--red); border:1px solid #e7c3bf;}
+  .p-imp{background:var(--amber-soft); color:var(--amber); border:1px solid #e8d5ac;}
+  .p-ok{background:var(--green-soft); color:var(--green); border:1px solid #bcd9c8;}
+  .p-teal{background:var(--teal-soft); color:var(--teal); border:1px solid #b9dcdf;}
+
+  /* ---------- grid cards ---------- */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0;}
+  .grid.two{grid-template-columns:repeat(2,1fr);}
+  .card{border:1px solid var(--line); border-radius:6px; padding:12px 13px; background:#fff;}
+  .card .ctop{font-size:7.6pt; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:var(--teal); margin-bottom:5px;}
+  .card .ch{font-size:10pt; font-weight:640; margin-bottom:5px; color:var(--ink); line-height:1.3;}
+  .card .cb{font-size:8.6pt; color:var(--muted); line-height:1.5;}
+  .card ul{padding-left:15px; margin:0;}
+  .card li{font-size:8.6pt; color:var(--slate); margin-bottom:3px;}
+
+  /* ---------- integration map ---------- */
+  .hub{
+    border:2px solid var(--navy); border-radius:6px; background:var(--navy); color:#fff;
+    padding:13px; text-align:center; margin:14px 0 10px;
+  }
+  .hub .hname{font-size:12pt; font-weight:660; letter-spacing:.3px;}
+  .hub .hsub{font-size:8.6pt; opacity:.82; margin-top:3px;}
+
+  /* ---------- phases ---------- */
+  .phase{
+    display:flex; gap:0; border:1px solid var(--line); border-radius:6px;
+    overflow:hidden; margin-bottom:9px; page-break-inside:avoid;
+  }
+  .phase-n{
+    flex:0 0 30mm; background:var(--bg-soft); border-right:1px solid var(--line);
+    padding:11px 12px;
+  }
+  .phase-n .pn{font-size:8pt; font-weight:700; color:var(--teal); letter-spacing:.9px; text-transform:uppercase;}
+  .phase-n .pt{font-size:10pt; font-weight:650; color:var(--navy); margin-top:2px; line-height:1.25;}
+  .phase-b{flex:1; padding:11px 13px; font-size:9pt; color:var(--slate); line-height:1.5;}
+  .phase-b .gate{display:block; margin-top:6px; font-size:8.4pt; color:var(--muted);}
+
+  /* ---------- footer ---------- */
+  .foot{
+    border-top:1px solid var(--line); margin-top:34px; padding-top:12px;
+    font-size:8.4pt; color:var(--muted); display:flex; justify-content:space-between; gap:20px;
+  }
+
+  /* ---------- print ---------- */
+  @page{size:A4; margin:13mm 12mm;}
+  @media print{
+    .page{max-width:none; padding:0; margin:0;}
+    section{page-break-inside:auto;}
+    .sec-head{page-break-after:avoid;}
+    h3,h4{page-break-after:avoid;}
+    .chain,.lanes,.card,.phase,.callout,.state,table{page-break-inside:avoid;}
+    tr{page-break-inside:avoid;}
+    .break{page-break-before:always;}
+  }
+
+  @media (max-width:800px){
+    .grid,.grid.two{grid-template-columns:1fr;}
+    .chain{flex-wrap:wrap;}
+    .chain .node{flex:1 1 100%; margin:0 0 16px;}
+    .chain .node::after{right:auto; left:20px; top:auto; bottom:-14px; transform:none;
+      border-left:6px solid transparent; border-right:6px solid transparent;
+      border-top:8px solid var(--teal); border-bottom:0;}
+    .lane{flex-direction:column;}
+    .lane-label{flex:auto;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="eyebrow">Solution Proposal &middot; System Flow</div>
+  <h1>After-Hours Telehealth &amp;<br>Home Doctor Platform</h1>
+  <p class="lede">
+    An end-to-end operating model for a Medicare bulk-billed after-hours medical service —
+    covering the patient journey, the clinician workstation, dispatch and home visits,
+    aged-care delivery, billing, and the regulatory integrations that make it lawful.
+  </p>
+  <div class="meta-row">
+    <div><div class="k">Document</div><div class="v">Overall System Flow</div></div>
+    <div><div class="k">Scope</div><div class="v">Platform &amp; Delivery Plan</div></div>
+    <div><div class="k">Status</div><div class="v">For Discussion</div></div>
+    <div><div class="k">Version</div><div class="v">Draft 1.0</div></div>
+  </div>
+</div>
+
+<!-- ============ 1. OVERVIEW ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>What the platform is</h2></div>
+  <p class="sec-sub">One sentence, so everything below has a frame.</p>
+
+  <p>
+    The platform runs a <strong>bulk-billed after-hours medical service</strong>. It takes a patient who
+    is unwell when their regular GP is closed, routes them to an available doctor within minutes,
+    supports that doctor through a complete consultation — notes, prescribing, referral, investigation,
+    certificates — and then closes the loop by delivering artefacts to the patient, a report to their
+    usual GP, and a claim to Medicare.
+  </p>
+  <p>
+    It is <strong>not</strong> a video-calling product. Video is one channel inside a much larger
+    clinical, logistical and financial workflow. The value sits in the routing, the clinical safety
+    controls, the artefact pipeline and the billing engine.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ctop">Channel 1</div>
+      <div class="ch">Telehealth</div>
+      <div class="cb">Phone or video consultation, delivered nationally. Highest volume, lowest cost to serve.</div>
+    </div>
+    <div class="card">
+      <div class="ctop">Channel 2</div>
+      <div class="ch">Home Visits</div>
+      <div class="cb">A doctor physically attends. Geographically bounded, dispatch-routed, higher value per consult.</div>
+    </div>
+    <div class="card">
+      <div class="ctop">Channel 3</div>
+      <div class="ch">Aged Care</div>
+      <div class="cb">Contracted cover for residential facilities. Booked by nursing staff through a facility portal, not by patients.</div>
+    </div>
+  </div>
+
+  <h4>Operating window</h4>
+  <p>
+    The service exists specifically in the after-hours window — weeknights from 6pm to 8am, Saturdays
+    from noon, and all day Sunday and public holidays. This is not a business preference. It is the
+    window in which the after-hours Medicare item numbers apply, and it therefore defines when the
+    platform generates revenue at all.
+  </p>
+</section>
+
+<!-- ============ 2. ACTORS ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Who uses it</h2></div>
+  <p class="sec-sub">Six actors, five distinct interfaces. Most proposals underestimate this — the clinician console is only one of them.</p>
+
+  <table>
+    <thead>
+      <tr><th style="width:24%">Actor</th><th style="width:26%">Interface</th><th>Responsibility</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Patient</strong></td><td>Public site + booking app</td><td>Requests care, states symptoms and channel preference, provides Medicare details, receives artefacts.</td></tr>
+      <tr><td><strong>Doctor</strong></td><td>Clinician console</td><td>Claims patients from the queue, consults, prescribes, documents, bills. Contracted, not employed.</td></tr>
+      <tr><td><strong>Dispatcher</strong></td><td>Dispatch workstation</td><td>Phone triage, routes home-visit doctors, monitors queue health, escalates.</td></tr>
+      <tr><td><strong>Facility staff</strong></td><td>Aged-care portal</td><td>Requests after-hours cover for residents, supplies clinical context.</td></tr>
+      <tr><td><strong>Clinical governance</strong></td><td>Governance dashboard</td><td>Audits notes, tracks unactioned results, reviews prescribing outliers and incidents.</td></tr>
+      <tr><td><strong>Administration</strong></td><td>Admin console</td><td>Doctor credentialing, rostering, service-fee invoicing, business analytics.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="ctitle">Commercial model</div>
+    <p>
+      Doctors are <strong>independent contractors</strong>. They bill Medicare under their own provider
+      number; the operator takes a service fee collected by direct debit and invoiced weekly. The platform
+      is therefore a two-sided marketplace with a clinical-safety obligation — it must attract and retain
+      doctors while remaining accountable for the care they deliver.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 3. MASTER FLOW ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">03</span><h2>The core operating flow</h2></div>
+  <p class="sec-sub">Nine stages from unwell patient to paid claim. Everything else in this document expands one of these.</p>
+
+  <div class="chain">
+    <div class="node"><span class="n">01</span><div class="t">Request</div><div class="d">Patient books via web or phone. Symptoms, channel preference and Medicare details captured.</div></div>
+    <div class="node"><span class="n">02</span><div class="t">Triage</div><div class="d">Eligibility validated, acuity scored, presenting complaint auto-categorised.</div></div>
+    <div class="node"><span class="n">03</span><div class="t">Queue</div><div class="d">Patient enters the correct channel queue, ordered by acuity and wait time.</div></div>
+  </div>
+  <div class="chain">
+    <div class="node"><span class="n">04</span><div class="t">Claim</div><div class="d">A doctor claims the patient. The record locks to them; family members assign together.</div></div>
+    <div class="node"><span class="n">05</span><div class="t">Connect</div><div class="d">Phone or video established from inside the platform. Patient joins by SMS link.</div></div>
+    <div class="node"><span class="n">06</span><div class="t">Consult</div><div class="d">History, examination, decision. Notes drafted by AI scribe against the doctor's template.</div></div>
+  </div>
+  <div class="chain">
+    <div class="node"><span class="n">07</span><div class="t">Act</div><div class="d">Prescribe, refer, investigate, certify — each generating an artefact held in escrow.</div></div>
+    <div class="node"><span class="n">08</span><div class="t">Close</div><div class="d">Doctor attests the notes and ends the consult. All artefacts release to the patient at once.</div></div>
+    <div class="node"><span class="n">09</span><div class="t">Settle</div><div class="d">Claim batched to Medicare, report sent to the usual GP, service fee reconciled.</div></div>
+  </div>
+
+  <div class="callout">
+    <div class="ctitle">The single most important design rule</div>
+    <p>
+      <strong>Nothing reaches the patient until the consult is ended.</strong> Prescriptions, referral
+      letters, pathology forms and medical certificates all accumulate against the consult and release
+      together on close. <em>End Consult</em> is a transaction boundary, not a screen change — it commits
+      the clinical record, releases every artefact, and queues the claim. Modelling it any other way
+      produces half-issued scripts and unbilled consults.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 4. SWIMLANE ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>End-to-end journey by actor</h2></div>
+  <p class="sec-sub">The same flow, showing who does what and where the system acts on its own.</p>
+
+  <div class="lanes">
+    <div class="lane">
+      <div class="lane-label">Patient</div>
+      <div class="lane-body">
+        <span class="step">Books online or calls</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Enters symptoms</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Provides Medicare card</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Consents to telehealth &amp; recording</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Receives SMS, joins consult</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Consultation</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Receives script QR, letters, certificate</span>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label">Platform<br>(automated)</div>
+      <div class="lane-body">
+        <span class="step sys">Validates Medicare eligibility</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Classifies presenting complaint</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Scores acuity, ranks queue</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Locks record on claim</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Transcribes consult</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Drafts notes to template</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Releases artefacts on close</span><span class="arrow">&rsaquo;</span>
+        <span class="step sys">Batches claim, sends GP report</span>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label">Doctor</div>
+      <div class="lane-body">
+        <span class="step">Logs in, sets category filters</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Reviews queue</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Claims patient</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Reads AI patient summary</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Calls patient</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Consults</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Prescribes / refers / certifies</span><span class="arrow">&rsaquo;</span>
+        <span class="step crit">Reviews &amp; attests AI notes</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Selects item number, ends</span>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label">Dispatcher</div>
+      <div class="lane-body">
+        <span class="step">Takes phone bookings</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Monitors queue depth &amp; breaches</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Routes home-visit doctors</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Handles escalations from doctors</span><span class="arrow">&rsaquo;</span>
+        <span class="step crit">Responds to duress alerts</span>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label">Governance<br>&amp; Admin</div>
+      <div class="lane-body">
+        <span class="step">Credentials doctors</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Audits notes &amp; prescribing</span><span class="arrow">&rsaquo;</span>
+        <span class="step crit">Chases unactioned results</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Reconciles service fees</span><span class="arrow">&rsaquo;</span>
+        <span class="step">Reports on demand &amp; utilisation</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. CONSULT STATE MACHINE ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Consult lifecycle</h2></div>
+  <p class="sec-sub">The state machine at the heart of the system. Every consult is in exactly one of these states.</p>
+
+  <div class="states">
+    <div class="state"><div class="sname">Requested</div><div class="sdesc">Created at booking. Not yet eligible for the queue — awaiting eligibility and consent.</div></div>
+    <div class="state"><div class="sname">Queued</div><div class="sdesc">Visible to matching doctors. Acuity-ranked. Wait timer running against SLA.</div></div>
+    <div class="state"><div class="sname">Claimed</div><div class="sdesc">Locked to one doctor. Invisible to all others. Family members claim as a group.</div></div>
+    <div class="state"><div class="sname">In Consult</div><div class="sdesc">Connected by phone or video. Recording and transcription active. Duration timer feeding item eligibility.</div></div>
+    <div class="state"><div class="sname">Pending Attestation</div><div class="sdesc">Clinical activity complete; notes drafted but not yet signed. Cannot close from here.</div></div>
+    <div class="state terminal"><div class="sname">Closed</div><div class="sdesc">Notes attested, artefacts released, claim queued, GP report generated. Record becomes append-only.</div></div>
+    <div class="state"><div class="sname">Requeued</div><div class="sdesc">Patient unreachable. Returns to the pool with attempt count incremented.</div></div>
+    <div class="state"><div class="sname">Rejected</div><div class="sdesc">Doctor declined with a recorded reason. Returns to queue; reason is auditable.</div></div>
+    <div class="state terminal"><div class="sname">Abandoned</div><div class="sdesc">Exhausted contact attempts or patient withdrew. No claim. Retained for audit.</div></div>
+  </div>
+
+  <div class="callout warn">
+    <div class="ctitle">Attestation gate</div>
+    <p>
+      A consult cannot move from <em>Pending Attestation</em> to <em>Closed</em> until the doctor has
+      explicitly reviewed and signed the notes. Where AI drafted those notes, the system records the
+      model version, retains the source transcript, and stores the doctor's sign-off. This is what makes
+      an AI-assisted record defensible years later.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 6. CLINICIAN CONSOLE ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Inside the clinician console</h2></div>
+  <p class="sec-sub">Where a doctor spends an entire shift. Three zones, five actions.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ctop">Zone 1</div>
+      <div class="ch">Clinical context</div>
+      <ul>
+        <li>Coded allergies</li>
+        <li>AI patient summary across prior consults</li>
+        <li>Conditions, long and short term</li>
+        <li>Current medications</li>
+        <li>Returned investigation results</li>
+        <li>Personal note templates</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ctop">Zone 2</div>
+      <div class="ch">Documentation</div>
+      <ul>
+        <li>Template-driven note editor</li>
+        <li>AI scribe from consult audio</li>
+        <li>Per-doctor scribe personalisation</li>
+        <li>Prior notes inline below</li>
+        <li>Amendment history, append-only</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ctop">Zone 3</div>
+      <div class="ch">Patient channel</div>
+      <ul>
+        <li>Outbound phone from the platform</li>
+        <li>Video once the patient joins</li>
+        <li>Text chat and photo upload</li>
+        <li>Nudge — rings the patient to join</li>
+        <li>Add family, requeue, end</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4>The five clinical actions</h4>
+  <table>
+    <thead><tr><th style="width:16%">Action</th><th style="width:44%">Produces</th><th>Dependency</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Prescribe</strong></td><td>PBS or streamlined-authority eScript, delivered as a QR token</td><td>Drug database licence + eScript exchange + real-time prescription monitoring</td></tr>
+      <tr><td><strong>Refer</strong></td><td>Specialist or emergency-department referral letter</td><td>Secure messaging to the receiving provider</td></tr>
+      <tr><td><strong>Investigate</strong></td><td>Pathology or radiology request form</td><td>Results ingestion with acknowledgement tracking</td></tr>
+      <tr><td><strong>Document</strong></td><td>Medical certificate (work, school, carer, fit-to-return) or free-text instructions</td><td>Doctor's digital signature; verification endpoint</td></tr>
+      <tr><td><strong>Bill</strong></td><td>Medicare item selection, validated against consult time and duration</td><td>Claiming integration with rejection handling</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 7. HOME VISIT ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Home visit &amp; dispatch flow</h2></div>
+  <p class="sec-sub">The logistics half of the business. Same clinical core, entirely different operational shape.</p>
+
+  <div class="chain">
+    <div class="node"><span class="n">01</span><div class="t">Request</div><div class="d">Patient books a visit or a telehealth doctor escalates one via dispatcher chat.</div></div>
+    <div class="node"><span class="n">02</span><div class="t">Geo-check</div><div class="d">Address validated against the serviced coverage area for that city.</div></div>
+    <div class="node"><span class="n">03</span><div class="t">Dispatch</div><div class="d">Job offered to doctors on the road; dispatcher can assign directly.</div></div>
+  </div>
+  <div class="chain">
+    <div class="node"><span class="n">04</span><div class="t">Route</div><div class="d">Accepted jobs sequenced by route optimisation. Patient notified of ETA.</div></div>
+    <div class="node"><span class="n">05</span><div class="t">Attend</div><div class="d">Doctor checks in on arrival. Duress timer armed. Consult conducted in person.</div></div>
+    <div class="node"><span class="n">06</span><div class="t">Close</div><div class="d">Check-out, notes attested, artefacts released, next job served.</div></div>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <div class="ctop">Additional requirements</div>
+      <div class="ch">What home visits need that telehealth does not</div>
+      <ul>
+        <li>Mobile-first interface, used from a vehicle</li>
+        <li>Offline tolerance — coverage is unreliable</li>
+        <li>Live location and ETA to the patient</li>
+        <li>Controlled-drug register for the doctor's bag</li>
+        <li>Address safety flags</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ctop">Lone-worker safety</div>
+      <div class="ch">A duty of care, not a feature</div>
+      <div class="cb">
+        Doctors attend unfamiliar addresses alone, at night. A reactive panic button requires a free hand
+        and a conscious decision. The platform should arm a check-in timer on arrival and escalate
+        automatically if the doctor does not check out — with the panic button as the backstop, not the
+        primary control.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. AGED CARE ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">08</span><h2>Aged care flow</h2></div>
+  <p class="sec-sub">Contracted B2B delivery. The requester is a nurse, not a patient — which changes the entire front end.</p>
+
+  <div class="chain">
+    <div class="node"><span class="n">01</span><div class="t">Facility requests</div><div class="d">Nursing staff raise a request through the facility portal for a named resident.</div></div>
+    <div class="node"><span class="n">02</span><div class="t">Context supplied</div><div class="d">Observations, medication chart, advance care directive and resuscitation status attached.</div></div>
+    <div class="node"><span class="n">03</span><div class="t">Routed</div><div class="d">Into the nursing-home queue — visit or telehealth depending on availability and acuity.</div></div>
+    <div class="node"><span class="n">04</span><div class="t">Consult &amp; chart</div><div class="d">Doctor consults with staff present, charts medication, documents back to the facility record.</div></div>
+  </div>
+
+  <div class="callout">
+    <div class="ctitle">Why this is a separate build, not a queue tab</div>
+    <p>
+      The consenting party is a facility, the clinical context arrives from a third party, the common
+      workload is different (falls review, medication charting, palliative care, UTIs), and the output
+      has to land in the facility's own records. Treating aged care as a filter on the patient queue
+      will fail on all four counts.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 9. INTEGRATIONS ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Integration map</h2></div>
+  <p class="sec-sub">The platform is a hub. Most of its obligations are discharged through external systems.</p>
+
+  <div class="hub">
+    <div class="hname">Telehealth Platform Core</div>
+    <div class="hsub">Patients &middot; Consults &middot; Clinical records &middot; Artefacts &middot; Claims &middot; Audit</div>
+  </div>
+
+  <table>
+    <thead><tr><th style="width:24%">System</th><th style="width:14%">Direction</th><th style="width:34%">Purpose</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Medicare / claiming services</td><td>Two-way</td><td>Eligibility check, claim submission, rejection handling</td><td><span class="pill p-crit">Blocking</span></td></tr>
+      <tr><td>eScript exchange</td><td>Outbound</td><td>Electronic prescription tokens redeemable at any pharmacy</td><td><span class="pill p-crit">Blocking</span></td></tr>
+      <tr><td>Drug database</td><td>Inbound</td><td>Product data, dosing, interactions, contraindications</td><td><span class="pill p-crit">Blocking</span></td></tr>
+      <tr><td>Real-time prescription monitoring</td><td>Two-way</td><td>Monitored-medicine checks — legally mandated, per state</td><td><span class="pill p-crit">Blocking</span></td></tr>
+      <tr><td>Secure clinical messaging</td><td>Outbound</td><td>Consult report to the patient's usual GP; specialist referrals</td><td><span class="pill p-imp">Core promise</span></td></tr>
+      <tr><td>National health record</td><td>Two-way</td><td>Event summaries out, shared health summary in</td><td><span class="pill p-imp">Expected</span></td></tr>
+      <tr><td>Pathology &amp; radiology</td><td>Inbound</td><td>Results delivery into the ordering doctor's inbox</td><td><span class="pill p-imp">Safety-critical</span></td></tr>
+      <tr><td>Telephony &amp; SMS</td><td>Two-way</td><td>Outbound calls, join links, artefact delivery, nudges</td><td><span class="pill p-ok">Standard</span></td></tr>
+      <tr><td>Video (WebRTC)</td><td>Two-way</td><td>Video consultation with recording for the scribe</td><td><span class="pill p-ok">Standard</span></td></tr>
+      <tr><td>Speech &amp; language models</td><td>Outbound</td><td>Transcription, note drafting, summarisation, triage classification</td><td><span class="pill p-ok">Standard</span></td></tr>
+      <tr><td>Mapping &amp; routing</td><td>Outbound</td><td>Coverage validation, route optimisation, live ETA</td><td><span class="pill p-ok">Standard</span></td></tr>
+      <tr><td>Interpreter service</td><td>Two-way</td><td>Three-way interpreted consultation</td><td><span class="pill p-imp">Equity</span></td></tr>
+      <tr><td>Payments &amp; direct debit</td><td>Two-way</td><td>Private consult fees; doctor service-fee collection</td><td><span class="pill p-ok">Standard</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 10. REVENUE ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">10</span><h2>Revenue flow</h2></div>
+  <p class="sec-sub">How a consultation becomes money, and where it can leak.</p>
+
+  <div class="chain">
+    <div class="node"><span class="n">01</span><div class="t">Item selected</div><div class="d">Doctor picks an MBS item; the system validates it against consult time, duration and doctor type.</div></div>
+    <div class="node"><span class="n">02</span><div class="t">Claim queued</div><div class="d">On consult close, the claim is written to the batch under the doctor's provider number.</div></div>
+    <div class="node"><span class="n">03</span><div class="t">Submitted</div><div class="d">Daily batch to Medicare. Bulk-billed, so no patient payment.</div></div>
+  </div>
+  <div class="chain">
+    <div class="node"><span class="n">04</span><div class="t">Reconciled</div><div class="d">Acceptances posted to the doctor's ledger. Rejections routed for correction and resubmission.</div></div>
+    <div class="node"><span class="n">05</span><div class="t">Fee applied</div><div class="d">Operator service fee calculated on settled billings.</div></div>
+    <div class="node"><span class="n">06</span><div class="t">Collected</div><div class="d">Weekly invoice issued and direct debit taken from the doctor.</div></div>
+  </div>
+
+  <div class="callout crit">
+    <div class="ctitle">Two leaks to close in the design</div>
+    <p>
+      <strong>Unbilled consults.</strong> A consult closed without an item number is clinical work performed for
+      nothing. The close flow must force an explicit item selection or an explicit no-billing reason.
+    </p>
+    <p>
+      <strong>Silent rejections.</strong> Batch-submit with no rejection workflow means failed claims are simply
+      never paid and nobody notices. Rejection handling is revenue protection, not an edge case.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 11. SAFETY ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">11</span><h2>Clinical safety controls</h2></div>
+  <p class="sec-sub">The controls that must be designed in from the first sprint, because they cannot be retrofitted.</p>
+
+  <table>
+    <thead><tr><th style="width:26%">Control</th><th style="width:38%">What it does</th><th>Why it cannot wait</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Coded allergies</strong></td><td>Structured allergy records rather than free text</td><td>Interaction checking is impossible against a text box; retrofitting means re-collecting every record</td></tr>
+      <tr><td><strong>Interaction checking</strong></td><td>Contraindication, duplicate-therapy and allergy alerts at the point of prescribing</td><td>The highest-consequence failure mode in the entire platform</td></tr>
+      <tr><td><strong>Prescription monitoring</strong></td><td>Checks monitored medicines against the state register</td><td>Legally mandated; prescribing without it is non-compliant</td></tr>
+      <tr><td><strong>Paediatric dosing</strong></td><td>Weight-based dose calculation with age guards</td><td>After-hours demand is heavily paediatric</td></tr>
+      <tr><td><strong>Results acknowledgement</strong></td><td>Tracks every ordered investigation to an acknowledged result, escalating when unactioned</td><td>Policy alone does not catch a missed abnormal result</td></tr>
+      <tr><td><strong>Append-only records</strong></td><td>Notes amendable only with visible, attributed history</td><td>A silently editable record has no evidentiary value</td></tr>
+      <tr><td><strong>AI provenance</strong></td><td>Records what the model produced, what the doctor changed, and the sign-off</td><td>Without it, no AI-drafted note is defensible in a complaint</td></tr>
+      <tr><td><strong>Immutable audit log</strong></td><td>Every access, edit, print and export attributed and timestamped</td><td>A privacy obligation and a breach-investigation prerequisite</td></tr>
+      <tr><td><strong>Emergency escalation</strong></td><td>One-click emergency pathway carrying patient location</td><td>Deteriorating patients present to after-hours services routinely</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="ctitle">A structural risk worth naming early</div>
+    <p>
+      When doctors can freely decline patients, permanently hide patients, filter by presenting complaint,
+      and see their own earnings on every screen, the system quietly optimises against low-value patients.
+      They sit in the queue while higher-value ones are claimed. The design answer is forced assignment
+      above a wait threshold, dispatcher override, and visibility of decline rates to clinical governance.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 12. ARCHITECTURE ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">12</span><h2>System composition</h2></div>
+  <p class="sec-sub">Five deliverable surfaces over one clinical core.</p>
+
+  <div class="grid">
+    <div class="card"><div class="ctop">Surface</div><div class="ch">Patient booking app</div><div class="cb">Request, triage questions, eligibility, consent, artefact retrieval, consult history.</div></div>
+    <div class="card"><div class="ctop">Surface</div><div class="ch">Clinician console</div><div class="cb">Queue, consult workspace, clinical actions, inbox, history, billing, profile.</div></div>
+    <div class="card"><div class="ctop">Surface</div><div class="ch">Dispatch workstation</div><div class="cb">Phone triage, allocation, doctor tracking, escalation and duress response.</div></div>
+    <div class="card"><div class="ctop">Surface</div><div class="ch">Facility portal</div><div class="cb">Aged-care request intake, resident context, returned documentation.</div></div>
+    <div class="card"><div class="ctop">Surface</div><div class="ch">Admin &amp; governance</div><div class="cb">Credentialing, rostering, clinical audit, analytics, fee reconciliation.</div></div>
+    <div class="card"><div class="ctop">Core</div><div class="ch">Clinical platform</div><div class="cb">Identity, patients, consults, records, artefacts, claims, audit, integrations, real-time queue and messaging.</div></div>
+  </div>
+
+  <h4>Cross-cutting concerns</h4>
+  <table>
+    <thead><tr><th style="width:30%">Concern</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td>Real-time</td><td>Live queue, presence, chat and consult state pushed to all connected clients without polling</td></tr>
+      <tr><td>Concurrency</td><td>Record locking so two doctors cannot claim the same patient</td></tr>
+      <tr><td>Resilience</td><td>Mid-consult disconnection must restore state, never orphan a consult</td></tr>
+      <tr><td>Data residency</td><td>All health data stored onshore</td></tr>
+      <tr><td>Access control</td><td>Role-based, least privilege, with justified break-glass access</td></tr>
+      <tr><td>Authentication</td><td>Multi-factor mandatory for any account able to prescribe</td></tr>
+      <tr><td>Retention</td><td>Seven years for adults; until age twenty-five for minors</td></tr>
+      <tr><td>Accessibility</td><td>WCAG 2.1 AA across all patient-facing surfaces</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 13. ROADMAP ============ -->
+<section class="break">
+  <div class="sec-head"><span class="sec-num">13</span><h2>Delivery approach</h2></div>
+  <p class="sec-sub">Sequenced so that regulatory dependencies run in parallel with build, not after it.</p>
+
+  <div class="phase">
+    <div class="phase-n"><div class="pn">Phase 1</div><div class="pt">Clinical core</div></div>
+    <div class="phase-b">
+      Identity and role-based access; patient and consult data model; real-time waiting room with claim locking;
+      consult workspace; templated notes with append-only history; manual billing capture. Audit logging and
+      consent capture are built here, not later.
+      <span class="gate">Outcome: a doctor can run a complete consult and record it defensibly.</span>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-n"><div class="pn">Phase 2</div><div class="pt">Communications</div></div>
+    <div class="phase-b">
+      Telephony, WebRTC video, SMS, patient join flow, nudge, clinical and dispatcher chat, notifications.
+      <span class="gate">Outcome: consults are conducted end-to-end inside the platform.</span>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-n"><div class="pn">Phase 3</div><div class="pt">Clinical actions</div></div>
+    <div class="phase-b">
+      Certificates and documents first — no external dependency. Then investigations and referrals with
+      secure messaging. Prescribing last, gated on the drug database, eScript exchange and prescription
+      monitoring being contracted and conformance-tested.
+      <span class="gate">Outcome: the full artefact pipeline, released atomically on consult close.</span>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-n"><div class="pn">Phase 4</div><div class="pt">Intelligence</div></div>
+    <div class="phase-b">
+      Transcription; AI scribe mapped to each doctor's template; cross-consult patient summary; triage
+      classification and acuity scoring — every one shipped behind provenance capture and an attestation gate.
+      <span class="gate">Outcome: documentation time per consult materially reduced.</span>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-n"><div class="pn">Phase 5</div><div class="pt">Scale surfaces</div></div>
+    <div class="phase-b">
+      Patient booking app; dispatch workstation with routing and lone-worker safety; aged-care facility
+      portal; governance and analytics.
+      <span class="gate">Outcome: all three revenue channels operating, with oversight.</span>
+    </div>
+  </div>
+
+  <h3>Regulatory dependencies — start immediately</h3>
+  <p>
+    These carry lead times measured in months and involve commercial agreements and conformance testing.
+    They are the critical path for Phase 3, and they should be initiated on day one of Phase 1.
+  </p>
+  <ul>
+    <li>Approved deputising-service status, without which the after-hours item numbers are not billable</li>
+    <li>Drug database licensing</li>
+    <li>Electronic prescription exchange conformance</li>
+    <li>Medicare online claiming registration and device activation</li>
+    <li>Real-time prescription monitoring access, obtained per state</li>
+    <li>National health record conformance assessment</li>
+    <li>Secure clinical messaging vendor agreement</li>
+  </ul>
+
+  <div class="callout">
+    <div class="ctitle">Recommended first milestone</div>
+    <p>
+      A working Phase 1 vertical slice — one doctor, one queue, one consult, fully recorded and audited —
+      is the fastest way to validate the model with real clinicians before committing to the integration
+      spend. Everything after that is addition, not rework.
+    </p>
+  </div>
+</section>
+
+<!-- ============ 14. RISKS ============ -->
+<section>
+  <div class="sec-head"><span class="sec-num">14</span><h2>Principal risks</h2></div>
+
+  <table>
+    <thead><tr><th style="width:26%">Risk</th><th style="width:11%">Severity</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Prescribing without interaction and allergy checking</td><td><span class="pill p-crit">Critical</span></td><td>Coded allergies from the first schema; interaction checking shipped with the prescribing module, never after it</td></tr>
+      <tr><td>Ordered investigations never followed up</td><td><span class="pill p-crit">Critical</span></td><td>Acknowledgement tracking with automatic escalation to clinical governance</td></tr>
+      <tr><td>AI-drafted notes disputed later</td><td><span class="pill p-crit">Critical</span></td><td>Transcript retention, model versioning, mandatory attestation before close</td></tr>
+      <tr><td>Regulatory approvals delay launch</td><td><span class="pill p-crit">Critical</span></td><td>Applications initiated in parallel with Phase 1; prescribing deliberately sequenced last</td></tr>
+      <tr><td>Low-acuity patients stranded in queue</td><td><span class="pill p-imp">High</span></td><td>Acuity ranking, forced assignment above a wait threshold, decline-rate visibility</td></tr>
+      <tr><td>Claims rejected and never resubmitted</td><td><span class="pill p-imp">High</span></td><td>Rejection queue with correction workflow and ageing report</td></tr>
+      <tr><td>Lone-worker incident on a home visit</td><td><span class="pill p-imp">High</span></td><td>Arrival check-in with automatic escalation on missed check-out; panic button as backstop</td></tr>
+      <tr><td>Doctor supply insufficient at peak</td><td><span class="pill p-imp">High</span></td><td>Demand forecasting, rostering, and surge incentives surfaced in the admin console</td></tr>
+      <tr><td>Health data breach</td><td><span class="pill p-imp">High</span></td><td>Onshore residency, encryption, least-privilege access, immutable audit, tested breach response</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="foot">
+  <div><strong>After-Hours Telehealth &amp; Home Doctor Platform</strong> &middot; Overall System Flow</div>
+  <div>Draft 1.0 &middot; For discussion</div>
+</div>
+
+</div>
+</body>
+</html>

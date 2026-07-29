@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #14202b;
+  --color-muted: #6b7c8d;
+  --color-line: #e3e9ee;
+  --color-brand: #17a2a8;
+  --color-brand-dark: #0e7c86;
+  --color-money: #2f9e5f;
+  --color-alarm: #d13c31;
+  --color-info: #2f7fd1;
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: #fff;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Doctor profile toggle: "Make font better" */
+.large-font {
+  font-size: 16px;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9d4dd;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
