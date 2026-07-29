@@ -29,10 +29,11 @@ const signupInput = z.object({
 
 const cookieOptions = {
   httpOnly: true,
-  sameSite: "lax" as const,
+  sameSite: env.COOKIE_SAMESITE,
   path: "/",
-  // Enable in production; localhost is served over plain HTTP.
-  secure: env.NODE_ENV === "production",
+  // SameSite=None is only honoured on a Secure cookie, and localhost is served
+  // over plain HTTP — so Secure follows production, or is forced by None.
+  secure: env.isProduction || env.COOKIE_SAMESITE === "none",
   maxAgeSeconds: SESSION_TTL_HOURS * 3600,
 };
 

@@ -17,10 +17,20 @@ import { createContext } from "./trpc.ts";
  */
 const app = Fastify({ routerOptions: { maxParamLength: 8000 }, logger: false });
 
-// `credentials: true` with an explicit origin allowlist — required for the
-// session cookie to be sent from the web app on a different port.
+// `credentials: true` with an explicit origin allowlist. A wildcard is not
+// permitted alongside credentials, so the deployed web origin must be named.
+const allowedOrigins = new Set([
+  ...env.webOrigins,
+  ...(env.isProduction ? [] : ["http://127.0.0.1:5173", "http://localhost:5173"]),
+]);
+
 await app.register(cors, {
-  origin: [env.WEB_ORIGIN, "http://127.0.0.1:5173", "http://localhost:5173"],
+  origin(origin, cb) {
+    // Same-origin and server-to-server calls arrive without an Origin header —
+    // this is the case when the web app proxies through its own domain.
+    if (!origin || allowedOrigins.has(origin)) return cb(null, true);
+    cb(new Error(`Origin not allowed: ${origin}`), false);
+  },
   credentials: true,
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["content-type", "authorization", "trpc-accept"],
@@ -50,9 +60,11 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 
 try {
-  await app.listen({ port: env.API_PORT, host: "0.0.0.0" });
-  console.log(`api listening on http://localhost:${env.API_PORT}`);
-  console.log(`trpc endpoint     http://localhost:${env.API_PORT}/trpc`);
+  // 0.0.0.0 is required by container hosts; localhost-only would be unreachable.
+  await app.listen({ port: env.port, host: "0.0.0.0" });
+  console.log(`api listening on port ${env.port} (${env.NODE_ENV})`);
+  console.log(`allowed origins: ${[...allowedOrigins].join(", ") || "(none)"}`);
+  console.log(`cookie SameSite: ${env.COOKIE_SAMESITE}`);
 } catch (err) {
   console.error(err);
   process.exit(1);
