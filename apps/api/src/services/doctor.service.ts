@@ -119,10 +119,33 @@ export class DoctorService {
   /**
    * Investigations this doctor ordered that are not yet acknowledged.
    * Follow-up sits with the orderer — copying the GP does not transfer it.
+   *
+   * Each row carries the patient and the words they used when they booked, so
+   * the doctor can recognise the case without opening it.
    */
   async inbox(doctor: Doctor) {
     const all = await this.artefacts.listInvestigationsForDoctor(doctor.id);
-    return all.filter((i) => i.status !== "acknowledged");
+
+    return all
+      .filter((i) => i.status !== "acknowledged")
+      .map((i) => ({
+        id: i.id,
+        consultId: i.consultId,
+        type: i.type,
+        tests: i.tests,
+        status: i.status,
+        isAbnormal: i.isAbnormal,
+        copyToGp: i.copyToGp,
+        orderedAt: i.createdAt,
+        patientName: `${i.consult.patient.firstName} ${i.consult.patient.lastName}`,
+        dob: i.consult.patient.dob,
+        gender: i.consult.patient.gender,
+        addressLine: i.consult.patient.addressLine,
+        suburb: i.consult.patient.suburb,
+        state: i.consult.patient.state,
+        postcode: i.consult.patient.postcode,
+        requestText: i.consult.additionalInfo,
+      }));
   }
 
   async acknowledgeInvestigation(doctor: Doctor, investigationId: string) {

@@ -58,8 +58,16 @@ easier — raise it instead.
     patient both require one, and both are auditable.
 
 11. **Every clinical procedure requires a session.** `doctorProcedure` is the
-    only way to reach patient data. `publicProcedure` exists solely for signup,
-    login and verification — do not use it for anything else.
+    only way to reach patient data. Two unauthenticated procedure types exist
+    and neither may read a patient record:
+    - `publicProcedure` — signup, login and verification only.
+    - `intakeProcedure` — public booking and doctor applications from the
+      website. Write-only, rate limited, and it may never create an account, a
+      session, a clinical artefact or a billing record. A patient booking has
+      no account to authenticate with; that is the entire exemption.
+
+    Anything that reads or changes an existing patient's record goes on
+    `doctorProcedure`, without exception.
 
 12. **Verification gates sign-in.** A correct password on an unverified account
     yields no session. Passwords are scrypt-hashed; session and verification

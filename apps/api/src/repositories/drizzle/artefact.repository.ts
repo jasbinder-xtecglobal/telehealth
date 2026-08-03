@@ -1,6 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import type { Executor } from "../../db/client.ts";
 import {
+  consults,
   documents,
   investigations,
   prescriptions,
@@ -86,11 +87,37 @@ export class DrizzleArtefactRepository
     return row!;
   }
 
+  /**
+   * The inbox row shows who the result belongs to and what they originally
+   * asked for, so the consult and patient come back with it rather than in a
+   * second round trip per row.
+   */
   async listInvestigationsForDoctor(doctorId: string, tx?: Executor) {
-    return this.exec(tx).query.investigations.findMany({
+    return (await this.exec(tx).query.investigations.findMany({
       where: eq(investigations.orderedByDoctorId, doctorId),
+      with: { consult: { with: { patient: true } } },
       orderBy: [desc(investigations.createdAt)],
-    });
+    })) as never;
+  }
+
+  /**
+   * The results panel in the consult console spans the patient's whole
+   * history, not just the consult being written — a result ordered last month
+   * is exactly what the doctor needs to see now.
+   */
+  async listInvestigationsForPatient(patientId: string, tx?: Executor) {
+    const db = this.exec(tx);
+    return (await db.query.investigations.findMany({
+      where: inArray(
+        investigations.consultId,
+        db
+          .select({ id: consults.id })
+          .from(consults)
+          .where(eq(consults.patientId, patientId)),
+      ),
+      with: { consult: { with: { patient: true } } },
+      orderBy: [desc(investigations.createdAt)],
+    })) as never;
   }
 
   async acknowledgeInvestigation(id: string, at: Date, tx?: Executor) {

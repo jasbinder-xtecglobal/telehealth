@@ -1,0 +1,10 @@
+{
+  "description": "Connects patients with qualified Australian doctors for secure online consultations while enabling doctors to apply for remote telehealth roles.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -144,6 +144,50 @@ export function PatientDetail() {
 
         {/* ---------------- AI summary ---------------- */}
         <div>
+          {c.intake && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/60">
+              <div className="border-b border-amber-200 px-4 py-2.5">
+                <h2 className="text-sm font-semibold text-amber-900">
+                  Reported by the patient at booking
+                </h2>
+                <p className="text-[11px] text-amber-800">
+                  Typed on the website by the patient. Not verified, not coded,
+                  and not used by interaction checking — confirm each item
+                  before you prescribe.
+                </p>
+              </div>
+              <dl className="divide-y divide-amber-200 text-sm">
+                <Row label="Reason given">{c.intake.reasonLabel}</Row>
+                {c.intake.painLevel !== null && (
+                  <Row label="Pain level">{c.intake.painLevel} / 10</Row>
+                )}
+                {c.intake.symptomsStartedOn && (
+                  <Row label="Symptoms started">
+                    {shortDate(c.intake.symptomsStartedOn)}
+                  </Row>
+                )}
+                <Row label="Allergies reported">
+                  {c.intake.reportedAllergies || "None reported"}
+                </Row>
+                <Row label="Medications reported">
+                  {c.intake.reportedMedications || "None reported"}
+                </Row>
+                <Row label="Conditions reported">
+                  {c.intake.reportedConditions || "None reported"}
+                </Row>
+                <Row label="Preferences">
+                  {[c.intake.preferredDoctor, c.intake.preferredTime]
+                    .filter(Boolean)
+                    .join(" · ") || "None"}
+                </Row>
+                <Row label="Preferred contact">
+                  {c.intake.preferredContact}
+                  {c.intake.email ? ` · ${c.intake.email}` : ""}
+                </Row>
+              </dl>
+            </div>
+          )}
+
           <div className="rounded-lg border border-line">
             <div className="border-b border-line px-4 py-3">
               <h2 className="font-semibold">

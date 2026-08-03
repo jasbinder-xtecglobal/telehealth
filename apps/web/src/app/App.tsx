@@ -7,8 +7,10 @@ import {
   ConsultHistory,
   Inbox,
   PanicButton,
-  Support,
 } from "@/features/admin/routes/AdminRoutes.tsx";
+import { Applications } from "@/features/admin/routes/Applications.tsx";
+import { Support } from "@/features/support/routes/Support.tsx";
+import { SoftwareUpdates } from "@/features/updates/routes/SoftwareUpdates.tsx";
 import { Login } from "@/features/auth/routes/Login.tsx";
 import { Signup } from "@/features/auth/routes/Signup.tsx";
 import { VerifyEmail } from "@/features/auth/routes/VerifyEmail.tsx";
@@ -100,6 +102,8 @@ export function App() {
                 <Route path="/history" element={<ConsultHistory />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/updates" element={<SoftwareUpdates />} />
+                <Route path="/applications" element={<Applications />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/panic" element={<PanicButton />} />
               </Routes>

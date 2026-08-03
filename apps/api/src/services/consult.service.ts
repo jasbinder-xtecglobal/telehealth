@@ -15,6 +15,12 @@ import {
   assertTransition,
   evaluateCloseGates,
 } from "../domain/consult/consult.policy.ts";
+import {
+  buildStatement,
+  isBillingIncomplete,
+  isoDate,
+  type StatementLine,
+} from "../domain/billing/statement.policy.ts";
 import { conflict, notFound } from "../domain/errors.ts";
 import type {
   ClockPort,
@@ -27,6 +33,7 @@ import type {
   AuditRepository,
   BillingRepository,
   ConsultRepository,
+  IntakeRepository,
   PatientRepository,
 } from "../repositories/ports.ts";
 import type { ScribeService } from "./scribe.service.ts";
@@ -44,6 +51,7 @@ export class ConsultService {
     private readonly patients: PatientRepository,
     private readonly artefacts: ArtefactRepository,
     private readonly billings: BillingRepository,
+    private readonly intake: IntakeRepository,
     private readonly audit: AuditRepository,
     private readonly scribeService: ScribeService,
     private readonly escript: EscriptPort,
@@ -68,10 +76,11 @@ export class ConsultService {
     const consult = await this.consults.findAggregate(consultId);
     if (!consult) throw notFound("Consult");
 
-    const [allergies, summary, transcript] = await Promise.all([
+    const [allergies, summary, transcript, intake] = await Promise.all([
       this.patients.listAllergies(consult.patientId),
       this.scribeService.summarisePatient(consultId, consult.patientId),
       this.consults.findTranscript(consultId),
+      this.intake.findConsultIntake(consultId),
     ]);
 
     return {
@@ -80,6 +89,12 @@ export class ConsultService {
       aiSummary: summary.summary,
       priorConsults: summary.priorConsults,
       transcript,
+      /**
+       * What the patient typed when they booked, or null for a consult that
+       * did not come through the public site. Unverified by definition —
+       * the UI must present it as the patient's claim, not as clinical data.
+       */
+      intake,
       closeGates: evaluateCloseGates({
         status: consult.status,
         notes: consult.notes,
@@ -93,27 +108,113 @@ export class ConsultService {
     return this.consults.listByDoctor(doctor.id, ACTIVE_STATUSES);
   }
 
-  async history(doctor: Doctor, opts: { onlyIncompleteBilling: boolean; days: number | null }) {
-    const rows = await this.consults.listClosedForDoctor(doctor.id);
+  /**
+   * Results for the patient in this consult, across their whole history.
+   *
+   * Investigations with no result yet are included and marked pending — an
+   * outstanding test is a piece of clinical information, not an absence of one.
+   */
+  async patientResults(consultId: string) {
+    const consult = await this.consults.findById(consultId);
+    if (!consult) throw notFound("Consult");
+
+    const rows = await this.artefacts.listInvestigationsForPatient(
+      consult.patientId,
+    );
+
+    return rows.map((i) => ({
+      id: i.id,
+      consultId: i.consultId,
+      type: i.type,
+      tests: i.tests,
+      status: i.status,
+      isAbnormal: i.isAbnormal,
+      resultBody: i.resultBody,
+      orderedAt: i.createdAt,
+      resultedAt: i.resultedAt,
+      pending: i.status === "ordered",
+      fromThisConsult: i.consultId === consultId,
+    }));
+  }
+
+  async history(
+    doctor: Doctor,
+    opts: { onlyIncompleteBilling: boolean; days: number | null },
+  ) {
+    const rows = await this.consults.listClosedForDoctor(doctor.id, null);
+    const now = this.clock.now();
     const cutoff = opts.days
-      ? new Date(this.clock.now().getTime() - opts.days * 86_400_000)
+      ? new Date(now.getTime() - opts.days * 86_400_000)
       : null;
 
-    return rows
+    // "Today" is midnight to midnight local, matching the shift the doctor
+    // just worked — not a rolling 24 hours.
+    const today = isoDate(now);
+    const todayCount = rows.filter(
+      (r) => r.endedAt && isoDate(r.endedAt) === today,
+    ).length;
+
+    const items = rows
       .filter((r) => (cutoff ? (r.endedAt ?? r.createdAt) >= cutoff : true))
       .filter((r) =>
-        opts.onlyIncompleteBilling
-          ? r.billings.length === 0 || r.billings.some((b) => b.status === "pending")
-          : true,
+        opts.onlyIncompleteBilling ? isBillingIncomplete(r.billings) : true,
       )
       .map((r) => ({
         id: r.id,
         patientName: `${r.patient.firstName} ${r.patient.lastName}`,
+        dob: r.patient.dob,
+        gender: r.patient.gender,
+        addressLine: r.patient.addressLine,
+        suburb: r.patient.suburb,
+        state: r.patient.state,
+        postcode: r.patient.postcode,
+        requestText: r.additionalInfo,
+        category: r.symptomCategory,
         endedAt: r.endedAt,
         hasNotes: Boolean(r.notes?.trim()),
         fee: r.billings.reduce((s, b) => s + Number(b.fee ?? 0), 0),
         billingStatus: r.billings[0]?.status ?? "pending",
+        billingIncomplete: isBillingIncomplete(r.billings),
+        itemNumbers: r.billings
+          .map((b) => b.itemNumber)
+          .filter((n): n is string => Boolean(n)),
       }));
+
+    return { todayCount, items };
+  }
+
+  /**
+   * Earnings for a date range, rolled up by week then day.
+   *
+   * The range is applied in SQL and the arithmetic in the domain, so this
+   * method only marshals between the two.
+   */
+  async billingStatement(doctor: Doctor, opts: { start: string; end: string }) {
+    const from = new Date(`${opts.start}T00:00:00`);
+    const to = new Date(`${opts.end}T23:59:59.999`);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      throw conflict("Invalid date range");
+    }
+
+    const rows = await this.consults.listClosedForDoctor(doctor.id, { from, to });
+
+    const lines: StatementLine[] = rows
+      .filter((r) => r.endedAt !== null)
+      .map((r) => ({
+        consultId: r.id,
+        patientName: `${r.patient.firstName} ${r.patient.lastName}`,
+        dob: r.patient.dob,
+        gender: r.patient.gender,
+        endedAt: r.endedAt!,
+        category: r.symptomCategory,
+        itemNumbers: r.billings
+          .map((b) => b.itemNumber)
+          .filter((n): n is string => Boolean(n)),
+        fee: r.billings.reduce((s, b) => s + Number(b.fee ?? 0), 0),
+        billed: r.billings.some((b) => b.status !== "no_billing"),
+      }));
+
+    return buildStatement(lines);
   }
 
   /* ---------------------------------------------------------------- *
@@ -458,7 +559,22 @@ export class ConsultService {
       claimedAt: this.clock.now(),
     });
 
+    // Creating a patient record and a claimed consult is a state change like
+    // any other (invariant 9) — and one worth being able to reconstruct, since
+    // it adds a billable attendance under the same phone number and address.
+    await this.audit.record({
+      ...this.actor(input.doctor),
+      eventType: "consult.family_member_added",
+      entityType: "consult",
+      entityId: consult.id,
+      payload: {
+        parentConsultId: input.consultId,
+        patientId: patient.id,
+        familyGroupId: groupId,
+      },
+    });
+
     this.events.publish({ type: "queue.changed", channel: parent.channel });
-    return consult;
+    return { consult, patient };
   }
 }

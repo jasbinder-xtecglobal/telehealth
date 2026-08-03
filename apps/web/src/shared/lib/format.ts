@@ -1,3 +1,22 @@
+/**
+ * Mirrors the `symptom_category` enum. A const array rather than the keys of
+ * `CATEGORY_LABELS`, which is widened to `string` so it can also render a
+ * category the server adds before the client is redeployed.
+ */
+export const SYMPTOM_CATEGORIES = [
+  "mens_health",
+  "womens_health",
+  "gut_related",
+  "skin",
+  "mental_health_sleep_headache",
+  "medical_certificate_only",
+  "prescribed_weight_loss",
+  "opioids",
+  "other_issues",
+] as const;
+
+export type CategoryKey = (typeof SYMPTOM_CATEGORIES)[number];
+
 export const CATEGORY_LABELS: Record<string, string> = {
   mens_health: "Men's Health",
   womens_health: "Women's Health",

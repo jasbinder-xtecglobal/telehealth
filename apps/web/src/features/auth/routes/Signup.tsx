@@ -200,7 +200,13 @@ export function Signup() {
           </Field>
         </div>
 
-        <Button type="submit" variant="primary" full disabled={signup.isPending || !passwordOk}>
+        <Button
+          type="submit"
+          variant="primary"
+          className="auth-cta"
+          full
+          disabled={signup.isPending || !passwordOk}
+        >
           {signup.isPending ? "Creating account…" : "Create account"}
         </Button>
       </form>

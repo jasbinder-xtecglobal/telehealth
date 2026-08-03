@@ -35,9 +35,26 @@ export const consultRouter = router({
     )
     .query(({ ctx, input }) => ctx.services.consult.history(ctx.doctor, input)),
 
+  billingStatement: doctorProcedure
+    .input(
+      z.object({
+        start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      ctx.services.consult.billingStatement(ctx.doctor, input),
+    ),
+
   revisions: doctorProcedure
     .input(consultIdInput)
     .query(({ ctx, input }) => ctx.services.scribe.listRevisions(input.consultId)),
+
+  patientResults: doctorProcedure
+    .input(consultIdInput)
+    .query(({ ctx, input }) =>
+      ctx.services.consult.patientResults(input.consultId),
+    ),
 
   /* ---------------- queue actions ---------------- */
   claim: doctorProcedure

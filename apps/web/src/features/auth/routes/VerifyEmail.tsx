@@ -58,7 +58,7 @@ export function VerifyEmail() {
         {verify.data?.email} is confirmed. You can sign in now.
       </Alert>
       <Link to="/login">
-        <Button variant="primary" full>
+        <Button variant="primary" className="auth-cta" full>
           Continue to sign in
         </Button>
       </Link>

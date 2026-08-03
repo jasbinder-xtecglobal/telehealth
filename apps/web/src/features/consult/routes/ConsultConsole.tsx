@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
+  AddFamilyModal,
   BillModal,
   DocumentModal,
   InvestigateModal,
   PrescribeModal,
   ReferModal,
 } from "@/features/consult/components/ActionModals.tsx";
+import { ClinicalSidebar } from "@/features/consult/components/ClinicalSidebar.tsx";
 import {
   Alert,
   Button,
@@ -46,6 +48,7 @@ export function ConsultConsole() {
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [transcript, setTranscript] = useState(SAMPLE_TRANSCRIPT);
   const [consent, setConsent] = useState(false);
+  const [familyOpen, setFamilyOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const [endResult, setEndResult] = useState<{ links: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +198,12 @@ export function ConsultConsole() {
           >
             {c.status.replace(/_/g, " ")}
           </Chip>
+          <Button
+            className="!text-[#2f9e5f]"
+            onClick={() => setFamilyOpen(true)}
+          >
+            Add family
+          </Button>
           <Button onClick={() => requeue.mutate({ consultId })}>Requeue</Button>
           <Button variant="danger" onClick={() => setEndOpen(true)}>
             End
@@ -245,19 +254,16 @@ export function ConsultConsole() {
             )}
           </div>
 
-          <div className="mb-3 rounded-lg border border-line">
-            <div className="border-b border-line px-3 py-2 text-xs font-semibold tracking-wide uppercase text-muted">
-              Patient Summary
-            </div>
-            <div className="px-3 py-2">
-              <div className="mb-1.5 text-sm font-semibold">
-                AI Patient Summary{" "}
-                <span className="text-[10px] font-normal text-orange-600">(beta)</span>
-              </div>
-              <pre className="text-[12.5px] leading-relaxed whitespace-pre-wrap">
-                {c.aiSummary}
-              </pre>
-            </div>
+          <div className="mb-3">
+            <ClinicalSidebar
+              consultId={consultId}
+              aiSummary={c.aiSummary}
+              priorConsultCount={c.priorConsults.length}
+              onInsertTemplate={(body) => {
+                setNotes(body);
+                setDirty(true);
+              }}
+            />
           </div>
 
           {/* drafted artefacts, held until close */}
@@ -273,7 +279,7 @@ export function ConsultConsole() {
                 <div key={p.id} className="px-3 py-2">
                   <div className="font-medium">{p.productName}</div>
                   <div className="text-xs text-muted">
-                    {p.quantity} Â· {p.repeats} rpt Â· {p.directions}
+                    {p.quantity} · {p.repeats} rpt · {p.directions}
                   </div>
                   <div className="mt-0.5 text-[11px]">
                     {p.status === "issued" ? (
@@ -375,7 +381,7 @@ export function ConsultConsole() {
                 className="!py-1 text-xs"
                 onClick={() => setTranscriptOpen(true)}
               >
-                Transcript {c.transcript ? "âœ“" : ""}
+                Transcript {c.transcript ? "✓" : ""}
               </Button>
               <Button
                 variant="ghost"
@@ -405,7 +411,7 @@ export function ConsultConsole() {
             <div className="text-xs text-muted">
               {attested ? (
                 <span className="text-green-700">
-                  âœ“ Attested {shortDate(c.notesAttestedAt)}
+                  ✓ Attested {shortDate(c.notesAttestedAt)}
                 </span>
               ) : dirty ? (
                 <span className="text-amber-700">Unsaved changes</span>
@@ -505,6 +511,13 @@ export function ConsultConsole() {
       <InvestigateModal consultId={consultId} open={openAction === "investigate"} onClose={() => setOpenAction(null)} />
       <DocumentModal consultId={consultId} open={openAction === "document"} onClose={() => setOpenAction(null)} />
       <BillModal consultId={consultId} open={openAction === "bill"} onClose={() => setOpenAction(null)} />
+
+      <AddFamilyModal
+        consultId={consultId}
+        open={familyOpen}
+        onClose={() => setFamilyOpen(false)}
+        onOpenConsult={(id) => navigate(`/consult/${id}`)}
+      />
 
       {/* transcript */}
       <Modal
@@ -627,7 +640,7 @@ function Gate({ ok, label }: { ok: boolean; label: string }) {
   return (
     <li className="flex items-center gap-2">
       <span className={ok ? "text-green-600" : "text-slate-300"}>
-        {ok ? "âœ“" : "â—‹"}
+        {ok ? "✓" : "○"}
       </span>
       <span className={ok ? "" : "text-muted"}>{label}</span>
     </li>

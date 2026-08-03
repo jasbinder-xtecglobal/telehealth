@@ -109,6 +109,26 @@ export const auStateEnum = pgEnum("au_state", [
   "NT",
 ]);
 
+/**
+ * A doctor application is a recruitment record, not an account. An accepted
+ * application is followed by credentialing and a contract before the operator
+ * issues credentials — nothing here can sign in.
+ */
+export const applicationStatus = pgEnum("application_status", [
+  "submitted",
+  "reviewing",
+  "accepted",
+  "declined",
+]);
+
+export const employmentPreference = pgEnum("employment_preference", [
+  "part_time",
+  "full_time",
+]);
+
+/** How the patient asked to be contacted about their booking. */
+export const contactMethod = pgEnum("contact_method", ["phone", "email", "sms"]);
+
 export type ConsultChannel = (typeof consultChannel.enumValues)[number];
 export type ConsultStatus = (typeof consultStatus.enumValues)[number];
 export type ConsultPreference = (typeof consultPreference.enumValues)[number];
@@ -122,3 +142,6 @@ export type BillingStatus = (typeof billingStatus.enumValues)[number];
 export type ChatChannelName = (typeof chatChannel.enumValues)[number];
 export type AccountStatus = (typeof accountStatus.enumValues)[number];
 export type AuState = (typeof auStateEnum.enumValues)[number];
+export type ApplicationStatus = (typeof applicationStatus.enumValues)[number];
+export type EmploymentPreference = (typeof employmentPreference.enumValues)[number];
+export type ContactMethod = (typeof contactMethod.enumValues)[number];

@@ -213,7 +213,7 @@ export function Account() {
                     {h.firstName} {h.lastName}
                   </div>
                   <div className="text-xs text-muted">
-                    {h.reason} Â· {shortDate(h.createdAt)}
+                    {h.reason} · {shortDate(h.createdAt)}
                   </div>
                 </div>
                 <Button
