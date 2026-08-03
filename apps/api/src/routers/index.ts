@@ -4,6 +4,7 @@ import { chatRouter } from "./chat.router.ts";
 import { consultRouter } from "./consult.router.ts";
 import { dispatchRouter } from "./dispatch.router.ts";
 import { doctorRouter } from "./doctor.router.ts";
+import { intakeRouter } from "./intake.router.ts";
 import { queueRouter } from "./queue.router.ts";
 import { referenceRouter } from "./reference.router.ts";
 
@@ -13,6 +14,7 @@ export const appRouter = router({
   consult: consultRouter,
   dispatch: dispatchRouter,
   doctor: doctorRouter,
+  intake: intakeRouter,
   chat: chatRouter,
   reference: referenceRouter,
 });

@@ -7,5 +7,6 @@ export { DrizzleChatRepository } from "./drizzle/chat.repository.ts";
 export { DrizzleConsultRepository } from "./drizzle/consult.repository.ts";
 export { DrizzleDispatchRepository } from "./drizzle/dispatch.repository.ts";
 export { DrizzleDoctorRepository } from "./drizzle/doctor.repository.ts";
+export { DrizzleIntakeRepository } from "./drizzle/intake.repository.ts";
 export { DrizzlePatientRepository } from "./drizzle/patient.repository.ts";
 export { DrizzleReferenceRepository } from "./drizzle/reference.repository.ts";

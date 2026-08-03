@@ -19,8 +19,10 @@ const {
   auditEvents,
   billings,
   chatMessages,
+  consultIntake,
   consults,
   consultTranscripts,
+  doctorApplications,
   doctorFilters,
   doctors,
   documents,
@@ -51,6 +53,8 @@ async function main() {
   await db.delete(auditEvents);
   await db.delete(noteRevisions);
   await db.delete(consultTranscripts);
+  await db.delete(consultIntake);
+  await db.delete(doctorApplications);
   await db.delete(prescriptions);
   await db.delete(referrals);
   await db.delete(investigations);
@@ -1001,6 +1005,382 @@ async function main() {
       }
     }
   }
+
+  /* ---------------------------------------------------------------- *
+   * Closed shifts for the demo doctor
+   *
+   * Consult History and Billing History are both views over closed consults,
+   * and the Inbox is a view over the investigations ordered in them. Without
+   * a worked history all three screens are empty on the demo account, so
+   * these are past shifts for David rather than more patients in the queue.
+   * ---------------------------------------------------------------- */
+  console.log("seeding closed consults…");
+
+  const past: {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: string;
+    addressLine: string;
+    suburb: string;
+    state: (typeof schema.auStateEnum.enumValues)[number];
+    postcode: string;
+    /** Whole days back from now that the consult closed. */
+    days: number;
+    /** Local hour it closed — after-hours, so mostly evening. */
+    hour: number;
+    /**
+     * Overrides `days`/`hour` to place the consult a few hours ago, so the
+     * "consultations today" counter has something to count whenever the
+     * demo is seeded.
+     */
+    hoursAgo?: number;
+    category: (typeof schema.symptomCategory.enumValues)[number];
+    info: string;
+    item: string | null;
+    fee: string;
+    billing: "paid" | "submitted" | "pending" | "no_billing";
+    noBillingReason?: string;
+    impression: string;
+    plan: string[];
+    investigation?: {
+      type: "pathology" | "radiology";
+      tests: string;
+      status: "ordered" | "resulted";
+      isAbnormal?: boolean;
+      resultBody?: string;
+    };
+  }[] = [
+    {
+      firstName: "Priya", lastName: "Raman", dob: "1989-02-17", gender: "female",
+      addressLine: "9 Bellair St", suburb: "Kensington", state: "VIC", postcode: "3031",
+      days: 0, hour: 0, hoursAgo: 2, category: "womens_health",
+      info: "Bad period pain, worse than usual, nothing is touching it.",
+      item: "5020", fee: "78.40", billing: "pending",
+      impression: "Primary dysmenorrhoea, no red flags",
+      plan: ["Regular ibuprofen with food", "Heat pack", "GP review if pattern changes"],
+    },
+    {
+      firstName: "Daniel", lastName: "Okafor", dob: "1995-12-09", gender: "male",
+      addressLine: "31 Nicholson St", suburb: "Fitzroy", state: "VIC", postcode: "3065",
+      days: 0, hour: 0, hoursAgo: 4, category: "medical_certificate_only",
+      info: "Off work with a migraine today, need a certificate for my employer.",
+      item: "5000", fee: "45.75", billing: "pending",
+      impression: "Migraine without aura, resolving",
+      plan: ["Medical certificate issued for today", "Usual triptan as prescribed by GP"],
+    },
+    {
+      firstName: "Tymira", lastName: "Rogers", dob: "1998-03-14", gender: "female",
+      addressLine: "12 Hoddle St", suburb: "Abbotsford", state: "VIC", postcode: "3067",
+      days: 1, hour: 20, category: "womens_health",
+      info: "Burning when passing urine since yesterday, going constantly.",
+      item: "5020", fee: "78.40", billing: "pending",
+      impression: "Lower urinary tract infection",
+      plan: ["Nitrofurantoin 100 mg BD for 5 days", "Increase fluids", "Urine MCS sent"],
+      investigation: { type: "pathology", tests: "Urine MCS", status: "ordered" },
+    },
+    {
+      firstName: "Oliver", lastName: "Baker", dob: "2010-06-02", gender: "male",
+      addressLine: "4 Rosslyn St", suburb: "West Melbourne", state: "VIC", postcode: "3003",
+      days: 1, hour: 21, category: "skin",
+      info: "Rash on both arms after starting a new washing powder.",
+      item: "5000", fee: "45.75", billing: "pending",
+      impression: "Contact dermatitis",
+      plan: ["Cease the new detergent", "Hydrocortisone 1% BD for 7 days", "Review if spreading"],
+    },
+    {
+      firstName: "Omar", lastName: "El Kordi", dob: "1991-11-23", gender: "male",
+      addressLine: "88 Sydney Rd", suburb: "Brunswick", state: "VIC", postcode: "3056",
+      days: 2, hour: 22, category: "other_issues",
+      info: "Ran out of my blood pressure tablets, pharmacy shut until Monday.",
+      item: "5000", fee: "45.75", billing: "paid",
+      impression: "Urgent repeat supply, stable hypertension",
+      plan: ["Perindopril 5 mg daily — 1 month supply", "See usual GP for ongoing scripts"],
+    },
+    {
+      firstName: "Sarita", lastName: "Basnet", dob: "1992-01-30", gender: "female",
+      addressLine: "27 Union St", suburb: "Northcote", state: "VIC", postcode: "3070",
+      days: 3, hour: 19, category: "other_issues",
+      info: "Twisted my ankle at netball, can weight bear but it's swollen.",
+      item: "5020", fee: "78.40", billing: "paid",
+      impression: "Grade 1 lateral ankle sprain, Ottawa rules negative",
+      plan: ["RICE", "Paracetamol and ibuprofen as needed", "Review in 5 days if not improving"],
+      investigation: {
+        type: "radiology", tests: "X-ray left ankle", status: "resulted",
+        resultBody: "No acute bony injury. Soft tissue swelling laterally.",
+      },
+    },
+    {
+      firstName: "Taniele", lastName: "Johnston", dob: "2008-09-05", gender: "female",
+      addressLine: "3 Kenny St", suburb: "Coburg", state: "VIC", postcode: "3058",
+      days: 4, hour: 23, category: "skin",
+      info: "Sunburn from the weekend has blistered across my shoulders.",
+      item: "5040", fee: "114.20", billing: "paid",
+      impression: "Superficial partial-thickness sunburn, approx 4% BSA",
+      plan: ["Non-adherent dressings", "Analgesia", "GP review in 48 hours for wound check"],
+    },
+    {
+      firstName: "Barbara", lastName: "Mead", dob: "1957-04-19", gender: "female",
+      addressLine: "16 Wheadon St", suburb: "Osborne", state: "SA", postcode: "5017",
+      days: 6, hour: 21, category: "gut_related",
+      info: "I have gastro. I've been vomiting and had diarrhoea most of the day.",
+      item: "5020", fee: "78.40", billing: "paid",
+      impression: "Viral gastroenteritis, mildly dehydrated",
+      plan: ["Oral rehydration", "Small frequent fluids", "Present to ED if unable to keep fluids down"],
+    },
+    {
+      firstName: "Corey", lastName: "Barratt", dob: "2007-02-08", gender: "male",
+      addressLine: "5 Britton St", suburb: "Gawler West", state: "SA", postcode: "5118",
+      days: 6, hour: 22, category: "gut_related",
+      info: "Stomach pain and cramps, vomiting, shaking chills. 7/10 pain.",
+      item: null, fee: "0.00", billing: "no_billing",
+      noBillingReason: "Escalated to emergency department mid-call — advised 000, no service provided",
+      impression: "Query appendicitis — referred to ED",
+      plan: ["Ambulance called", "Nil by mouth", "Handover given to receiving hospital"],
+    },
+    {
+      firstName: "Anish", lastName: "Gurung", dob: "2001-07-11", gender: "male",
+      addressLine: "3a Raymond Ave", suburb: "North Plympton", state: "SA", postcode: "5037",
+      days: 8, hour: 20, category: "medical_certificate_only",
+      info: "Had a headache this afternoon and called in sick. Only need a certificate.",
+      item: "5000", fee: "45.75", billing: "paid",
+      impression: "Resolved tension headache",
+      plan: ["Medical certificate issued for one day", "Simple analgesia if recurs"],
+    },
+    {
+      firstName: "Mali", lastName: "Toetu", dob: "2005-05-27", gender: "female",
+      addressLine: "86 Edgeware Rd", suburb: "Enmore", state: "NSW", postcode: "2042",
+      days: 9, hour: 23, category: "other_issues",
+      info: "A cold last week has triggered my asthma, short of breath on stairs.",
+      item: "5040", fee: "114.20", billing: "paid",
+      impression: "Asthma exacerbation, post-viral. No features of severe attack.",
+      plan: ["Ventolin 4 puffs via spacer 4-hourly", "Prednisolone 25 mg daily for 5 days", "Written action plan reviewed"],
+    },
+    {
+      firstName: "Simon", lastName: "Fong", dob: "1970-12-01", gender: "male",
+      addressLine: "125 Hawthorn Rd", suburb: "Forest Hill", state: "VIC", postcode: "3131",
+      days: 11, hour: 19, category: "other_issues",
+      info: "Ear infection, red swelling in the ear canal.",
+      item: "5020", fee: "78.40", billing: "paid",
+      impression: "Otitis externa",
+      plan: ["Ciprofloxacin/hydrocortisone drops TDS for 7 days", "Keep the ear dry"],
+    },
+    {
+      firstName: "Linda", lastName: "Barnes", dob: "1982-08-16", gender: "female",
+      addressLine: "3 Pasteur St", suburb: "Sunnybank", state: "QLD", postcode: "4109",
+      days: 13, hour: 22, category: "mental_health_sleep_headache",
+      info: "Haven't slept properly in two weeks, very anxious about work.",
+      item: "5060", fee: "152.80", billing: "paid",
+      impression: "Adjustment disorder with anxiety, insomnia. No suicidal ideation.",
+      plan: ["Sleep hygiene discussed", "No sedative prescribed — explained rationale", "GP follow-up within 7 days for mental health plan"],
+    },
+    {
+      firstName: "Blake", lastName: "Shadbolt", dob: "2008-01-09", gender: "male",
+      addressLine: "11a Nolan St", suburb: "Bendigo", state: "VIC", postcode: "3550",
+      days: 15, hour: 20, category: "other_issues",
+      info: "Sore throat, can't talk.",
+      item: "5020", fee: "78.40", billing: "paid",
+      impression: "Viral pharyngitis, Centor 1",
+      plan: ["Symptomatic treatment", "No antibiotic indicated", "Throat swab if not settling"],
+      investigation: {
+        type: "pathology", tests: "Throat swab MCS", status: "resulted", isAbnormal: true,
+        resultBody: "Group A streptococcus isolated. Sensitive to penicillin.",
+      },
+    },
+    {
+      firstName: "Charlie", lastName: "Telford", dob: "2019-03-22", gender: "male",
+      addressLine: "2/14 Bristol Ct", suburb: "Kilsyth", state: "VIC", postcode: "3137",
+      days: 17, hour: 21, category: "other_issues",
+      info: "Day 10 post-viral cough getting worse overnight.",
+      item: "5040", fee: "114.20", billing: "paid",
+      impression: "Post-viral cough, no focal chest signs on history",
+      plan: ["Reassurance", "Red flags given to parent", "Face-to-face review if fevers return"],
+      investigation: {
+        type: "radiology", tests: "Chest X-ray", status: "resulted",
+        resultBody: "Clear lung fields. No consolidation.",
+      },
+    },
+    {
+      firstName: "Kelly", lastName: "Griggs", dob: "1976-10-04", gender: "female",
+      addressLine: "145a Hopetoun St", suburb: "Kurri Kurri", state: "NSW", postcode: "2327",
+      days: 20, hour: 23, category: "other_issues",
+      info: "Fell out of bed last night, now hard to take a deep breath. Sore right side.",
+      item: "5060", fee: "152.80", billing: "paid",
+      impression: "Query rib fracture, no respiratory compromise",
+      plan: ["Analgesia", "Deep breathing exercises", "Chest X-ray arranged"],
+      investigation: { type: "radiology", tests: "Chest X-ray — right ribs", status: "ordered" },
+    },
+  ];
+
+  for (const v of past) {
+    const closedAt =
+      v.hoursAgo !== undefined
+        ? new Date(Date.now() - v.hoursAgo * 3_600_000)
+        : daysAgo(v.days);
+    if (v.hoursAgo === undefined) closedAt.setHours(v.hour, 0, 0, 0);
+    const startedAt = new Date(closedAt.getTime() - 14 * 60_000);
+
+    const [p] = await db
+      .insert(patients)
+      .values({
+        firstName: v.firstName,
+        lastName: v.lastName,
+        dob: v.dob,
+        gender: v.gender,
+        phone: `04${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
+        addressLine: v.addressLine,
+        suburb: v.suburb,
+        state: v.state,
+        postcode: v.postcode,
+        medicareNumber: `2${Math.floor(100_000_000 + Math.random() * 899_999_999)}`,
+        medicareIrn: "1",
+      })
+      .returning();
+    if (!p) continue;
+
+    const notes = [
+      "Dr David Szekely",
+      "3 points of ID checked",
+      "Patient aware that this is a bulk billed consultation and consents to being bulk billed",
+      "",
+      `PC - ${v.info}`,
+      "",
+      `Impression - ${v.impression}`,
+      "",
+      "Plan -",
+      ...v.plan.map((l) => `- ${l}`),
+    ].join("\n");
+
+    const [c] = await db
+      .insert(consults)
+      .values({
+        patientId: p.id,
+        doctorId: david.id,
+        channel: "telehealth",
+        status: "closed",
+        preference: v.days % 2 === 0 ? "video" : "phone",
+        symptomCategory: v.category,
+        additionalInfo: v.info,
+        requestedAt: new Date(startedAt.getTime() - 22 * 60_000),
+        claimedAt: new Date(startedAt.getTime() - 2 * 60_000),
+        startedAt,
+        endedAt: closedAt,
+        notes,
+        notesAttestedAt: closedAt,
+      })
+      .returning();
+    if (!c) continue;
+
+    await db.insert(noteRevisions).values({
+      consultId: c.id,
+      authorId: david.id,
+      body: notes,
+      aiGenerated: false,
+    });
+
+    await db.insert(billings).values({
+      consultId: c.id,
+      doctorId: david.id,
+      itemNumber: v.item,
+      description: v.item
+        ? "After-hours attendance, VR GP"
+        : "No billing recorded",
+      fee: v.fee,
+      status: v.billing,
+      noBillingReason: v.noBillingReason ?? null,
+      submittedAt:
+        v.billing === "paid" || v.billing === "submitted"
+          ? new Date(closedAt.getTime() + 12 * 3_600_000)
+          : null,
+    });
+
+    if (v.investigation) {
+      await db.insert(investigations).values({
+        consultId: c.id,
+        type: v.investigation.type,
+        tests: v.investigation.tests,
+        clinicalNotes: v.impression,
+        copyToGp: true,
+        status: v.investigation.status,
+        orderedByDoctorId: david.id,
+        resultBody: v.investigation.resultBody ?? null,
+        isAbnormal: v.investigation.isAbnormal ?? false,
+        resultedAt:
+          v.investigation.status === "resulted"
+            ? new Date(closedAt.getTime() + 36 * 3_600_000)
+            : null,
+        createdAt: closedAt,
+      });
+    }
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Doctor applications
+   *
+   * Recruitment records from the public site. None of these is an account —
+   * an applicant cannot sign in until the operator issues credentials.
+   * ---------------------------------------------------------------- */
+  console.log("seeding doctor applications…");
+  await db.insert(doctorApplications).values([
+    {
+      firstName: "James",
+      lastName: "Thornton",
+      email: "james.thornton@example.test",
+      phone: "0499888777",
+      ahpraNumber: "MED0001234567",
+      yearsExperience: "8 – 12 years",
+      specialty: "General Practice",
+      employment: "part_time",
+      coverLetter:
+        "Twelve years across emergency and general practice. Looking for two evening shifts a week around my clinic work.",
+      status: "submitted",
+      createdAt: daysAgo(1),
+    },
+    {
+      firstName: "Priya",
+      lastName: "Nandakumar",
+      email: "priya.nandakumar@example.test",
+      phone: "0455222111",
+      ahpraNumber: "MED0007654321",
+      yearsExperience: "4 – 7 years",
+      specialty: "Paediatrics",
+      employment: "part_time",
+      status: "submitted",
+      createdAt: daysAgo(3),
+    },
+    {
+      firstName: "Marcus",
+      lastName: "Whitfield",
+      email: "marcus.whitfield@example.test",
+      phone: "0433444555",
+      ahpraNumber: "MED0002468101",
+      yearsExperience: "13+ years",
+      specialty: "General Practice",
+      employment: "full_time",
+      coverLetter: "Recently relocated from Perth. Available for full-time night work.",
+      status: "reviewing",
+      reviewedAt: daysAgo(4),
+      reviewedByDoctorId: david.id,
+      reviewNote: "AHPRA check requested. Awaiting indemnity certificate.",
+      createdAt: daysAgo(9),
+    },
+    {
+      firstName: "Alina",
+      lastName: "Petrov",
+      email: "alina.petrov@example.test",
+      phone: "0466777888",
+      ahpraNumber: "MED0001357911",
+      yearsExperience: "1 – 3 years",
+      specialty: "Mental Health",
+      employment: "part_time",
+      status: "declined",
+      reviewedAt: daysAgo(11),
+      reviewedByDoctorId: david.id,
+      reviewNote:
+        "Below the minimum post-fellowship experience for unsupervised after-hours work.",
+      createdAt: daysAgo(14),
+    },
+  ]);
 
   /* ---------------------------------------------------------------- *
    * Clinical chat

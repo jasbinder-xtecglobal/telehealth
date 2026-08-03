@@ -51,6 +51,7 @@ import {
   DrizzleConsultRepository,
   DrizzleDispatchRepository,
   DrizzleDoctorRepository,
+  DrizzleIntakeRepository,
   DrizzlePatientRepository,
   DrizzleReferenceRepository,
 } from "./repositories/index.ts";
@@ -63,6 +64,7 @@ import type {
   ConsultRepository,
   DispatchRepository,
   DoctorRepository,
+  IntakeRepository,
   PatientRepository,
   ReferenceRepository,
 } from "./repositories/ports.ts";
@@ -73,6 +75,7 @@ import { ChatService } from "./services/chat.service.ts";
 import { ConsultService } from "./services/consult.service.ts";
 import { DispatchService } from "./services/dispatch.service.ts";
 import { DoctorService } from "./services/doctor.service.ts";
+import { IntakeService } from "./services/intake.service.ts";
 import { PrescribingService } from "./services/prescribing.service.ts";
 import { QueueService } from "./services/queue.service.ts";
 import { ReferenceService } from "./services/reference.service.ts";
@@ -104,6 +107,7 @@ export type Repositories = {
   audit: AuditRepository;
   dispatch: DispatchRepository;
   auth: AuthRepository;
+  intake: IntakeRepository;
 };
 
 export type Services = {
@@ -117,6 +121,7 @@ export type Services = {
   reference: ReferenceService;
   dispatch: DispatchService;
   auth: AuthService;
+  intake: IntakeService;
 };
 
 export type Container = {
@@ -178,6 +183,7 @@ export function createContainer(
     dispatch:
       overrides.repositories?.dispatch ?? new DrizzleDispatchRepository(database),
     auth: overrides.repositories?.auth ?? new DrizzleAuthRepository(database),
+    intake: overrides.repositories?.intake ?? new DrizzleIntakeRepository(database),
   };
 
   /* ---------------- services ---------------- */
@@ -197,6 +203,7 @@ export function createContainer(
       repositories.patients,
       repositories.artefacts,
       repositories.billings,
+      repositories.intake,
       repositories.audit,
       scribe,
       ports.escript,
@@ -228,6 +235,16 @@ export function createContainer(
       ports.clock,
     ),
     chat: new ChatService(repositories.chat, ports.events),
+    intake: new IntakeService(
+      repositories.intake,
+      repositories.patients,
+      repositories.consults,
+      repositories.audit,
+      ports.sms,
+      ports.events,
+      ports.clock,
+      tx,
+    ),
     reference: new ReferenceService(repositories.reference),
     auth: new AuthService(
       repositories.auth,

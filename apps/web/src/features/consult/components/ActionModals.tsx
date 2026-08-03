@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
+  CATEGORY_LABELS,
   DOCUMENT_LABELS,
   DOCUMENT_TYPES,
+  SYMPTOM_CATEGORIES,
   money,
+  type CategoryKey,
   type DocumentTypeKey,
 } from "@/shared/lib/format.ts";
 import { useTRPC } from "@/shared/lib/trpc.ts";
@@ -133,8 +136,8 @@ export function PrescribeModal({ consultId, open, onClose }: Props) {
             <div>
               <div className="text-sm font-semibold">{drug.productName}</div>
               <div className="text-xs text-muted">
-                {drug.activeIngredient} {drug.strength} Â· {drug.form}
-                {drug.pbsCode ? ` Â· PBS ${drug.pbsCode}` : ""}
+                {drug.activeIngredient} {drug.strength} · {drug.form}
+                {drug.pbsCode ? ` · PBS ${drug.pbsCode}` : ""}
               </div>
             </div>
             <Button variant="ghost" onClick={() => setDrugId(null)}>
@@ -598,6 +601,189 @@ export function BillModal({ consultId, open, onClose }: Props) {
           Record billing
         </Button>
       </div>
+    </Modal>
+  );
+}
+
+/* ================================================================== *
+ * Add family member
+ * ================================================================== */
+
+/**
+ * A household calls once and several people need seeing. Adding a member
+ * creates a patient in the same family group — inheriting the phone number
+ * and address of the person already on the call — and a consult already
+ * claimed by this doctor, so it is never offered to anyone else.
+ *
+ * It does not join the two consults. Each is billed, noted and attested
+ * separately, because each is a separate attendance.
+ */
+export function AddFamilyModal({
+  consultId,
+  open,
+  onClose,
+  onOpenConsult,
+}: Props & { onOpenConsult: (id: string) => void }) {
+  const trpc = useTRPC();
+  const qc = useQueryClient();
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [category, setCategory] = useState<CategoryKey>("other_issues");
+  const [info, setInfo] = useState("");
+  const [added, setAdded] = useState<{ id: string; name: string } | null>(null);
+
+  const parent = useQuery(trpc.consult.get.queryOptions({ consultId }));
+
+  const add = useMutation(
+    trpc.consult.addFamilyMember.mutationOptions({
+      onSuccess: (res) => {
+        setAdded({
+          id: res.consult.id,
+          name: `${res.patient.firstName} ${res.patient.lastName}`,
+        });
+        qc.invalidateQueries({ queryKey: trpc.queue.list.queryKey() });
+        qc.invalidateQueries({ queryKey: trpc.consult.mine.queryKey() });
+      },
+    }),
+  );
+
+  function close() {
+    setFirstName("");
+    setLastName("");
+    setDob("");
+    setGender("");
+    setCategory("other_issues");
+    setInfo("");
+    setAdded(null);
+    add.reset();
+    onClose();
+  }
+
+  const complete =
+    firstName.trim().length > 0 && lastName.trim().length > 0 && dob !== "";
+
+  const p = parent.data?.patient;
+
+  return (
+    <Modal
+      open={open}
+      onClose={close}
+      title={added ? "Family member added" : "Add family member"}
+      width="max-w-xl"
+    >
+      {added ? (
+        <>
+          <Alert tone="success" title={`${added.name} is now on your list`}>
+            A separate consult has been created and claimed by you. It needs its
+            own notes, attestation and billing decision before it can close.
+          </Alert>
+          <div className="flex justify-end gap-2">
+            <Button onClick={close}>Stay with this patient</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const id = added.id;
+                close();
+                onOpenConsult(id);
+              }}
+            >
+              Open {added.name.split(" ")[0]}'s consult
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          {p && (
+            <p className="mb-3 text-sm text-muted">
+              Contact details are inherited from {p.firstName} {p.lastName} —{" "}
+              {p.phone}, {p.addressLine}, {p.suburb} {p.state} {p.postcode}.
+            </p>
+          )}
+
+          <div className="grid gap-x-4 sm:grid-cols-2">
+            <Field label="First name">
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field label="Last name">
+              <Input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder={p?.lastName}
+              />
+            </Field>
+            <Field label="Date of birth">
+              <Input
+                type="date"
+                value={dob}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </Field>
+            <Field label="Gender">
+              <Select value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="">Not stated</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Symptom or condition">
+            <Select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as CategoryKey)}
+            >
+              {SYMPTOM_CATEGORIES.map((k) => (
+                <option key={k} value={k}>
+                  {CATEGORY_LABELS[k]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field
+            label="Additional information"
+            hint="What this person needs seeing for. Their own record, not a copy of the caller's."
+          >
+            <Textarea
+              rows={3}
+              value={info}
+              onChange={(e) => setInfo(e.target.value)}
+            />
+          </Field>
+
+          {add.isError && <Alert tone="danger">{add.error.message}</Alert>}
+
+          <div className="flex justify-end gap-2">
+            <Button onClick={close}>Cancel</Button>
+            <Button
+              variant="primary"
+              disabled={!complete || add.isPending}
+              onClick={() =>
+                add.mutate({
+                  consultId,
+                  firstName: firstName.trim(),
+                  lastName: lastName.trim(),
+                  dob,
+                  gender: gender || undefined,
+                  symptomCategory: category,
+                  additionalInfo: info.trim() || undefined,
+                })
+              }
+            >
+              {add.isPending ? "Adding…" : "Add to this call"}
+            </Button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }

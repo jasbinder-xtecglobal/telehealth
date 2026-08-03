@@ -80,6 +80,51 @@ const translateDomainErrors = t.middleware(async ({ next }) => {
 export const publicProcedure = t.procedure.use(translateDomainErrors);
 
 /**
+ * Unauthenticated intake from the public website.
+ *
+ * Separate from `publicProcedure` so the two cannot be confused. A patient
+ * booking a consultation has no account and never will — requiring a session
+ * would mean no bookings — but that is the whole of the exemption:
+ *
+ *   - write-only. Nothing here returns patient data, and nothing here reads a
+ *     record by an identifier a stranger could guess or enumerate.
+ *   - creates queued work for a doctor to assess. It never creates an account,
+ *     a session, a clinical artefact or a billing record.
+ *   - rate limited per client, because it is the one door with no lock.
+ *
+ * Anything that reads or changes an existing patient's record belongs on
+ * `doctorProcedure`, without exception.
+ */
+const INTAKE_WINDOW_MS = 60 * 60_000;
+const INTAKE_MAX_PER_WINDOW = 10;
+const intakeHits = new Map<string, number[]>();
+
+const rateLimitIntake = t.middleware(({ ctx, next }) => {
+  // In-process and per-instance. Real deployments need a shared store —
+  // two Render instances currently allow twice this.
+  const key = ctx.req.ip ?? "unknown";
+  const now = Date.now();
+  const recent = (intakeHits.get(key) ?? []).filter(
+    (t) => now - t < INTAKE_WINDOW_MS,
+  );
+
+  if (recent.length >= INTAKE_MAX_PER_WINDOW) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests from this connection. Please try again later.",
+    });
+  }
+
+  recent.push(now);
+  intakeHits.set(key, recent);
+  return next();
+});
+
+export const intakeProcedure = t.procedure
+  .use(translateDomainErrors)
+  .use(rateLimitIntake);
+
+/**
  * Requires a live session belonging to an active, verified account.
  * Everything clinical hangs off this.
  */

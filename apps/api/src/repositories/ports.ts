@@ -14,8 +14,12 @@ import type {
   ChatMessage,
   ClinicalDocument,
   Consult,
+  ConsultIntake,
   ConsultTranscript,
   Doctor,
+  DoctorApplication,
+  NewConsultIntake,
+  NewDoctorApplication,
   Drug,
   DuressAlert,
   EmailVerificationToken,
@@ -44,6 +48,11 @@ import type {
 } from "../db/schema/enums.ts";
 
 export type ConsultWithPatient = Consult & { patient: Patient };
+
+/** An ordered investigation carrying enough context to render the inbox row. */
+export type InvestigationWithContext = Investigation & {
+  consult: ConsultWithPatient;
+};
 
 export type ConsultAggregate = Consult & {
   patient: Patient;
@@ -75,8 +84,13 @@ export interface ConsultRepository {
     tx?: Executor,
   ): Promise<(Consult & { doctor: Doctor | null })[]>;
 
+  /**
+   * Closed consults for one doctor. `range` bounds the query in SQL so a
+   * billing statement is never silently truncated by a row cap.
+   */
   listClosedForDoctor(
     doctorId: string,
+    range: { from: Date; to: Date } | null,
     tx?: Executor,
   ): Promise<(Consult & { patient: Patient; billings: Billing[] })[]>;
 
@@ -91,6 +105,8 @@ export interface ConsultRepository {
     preference: "phone" | "video";
     symptomCategory: SymptomCategory;
     additionalInfo?: string | null;
+    /** 1 = most urgent. Set by triage; defaults to routine when omitted. */
+    acuity?: number;
     privateToDoctorId?: string | null;
     claimedAt?: Date | null;
   }, tx?: Executor): Promise<Consult>;
@@ -252,7 +268,15 @@ export interface ArtefactRepository {
     copyToGp: boolean;
     orderedByDoctorId: string;
   }, tx?: Executor): Promise<Investigation>;
-  listInvestigationsForDoctor(doctorId: string, tx?: Executor): Promise<Investigation[]>;
+  listInvestigationsForDoctor(
+    doctorId: string,
+    tx?: Executor,
+  ): Promise<InvestigationWithContext[]>;
+  /** Every investigation for a patient, across all their consults. */
+  listInvestigationsForPatient(
+    patientId: string,
+    tx?: Executor,
+  ): Promise<InvestigationWithContext[]>;
   acknowledgeInvestigation(id: string, at: Date, tx?: Executor): Promise<Investigation | null>;
 
   createDocument(input: {
@@ -335,10 +359,32 @@ export interface DispatchRepository {
   resolveAlert(id: string, resolvedBy: string, at: Date, tx?: Executor): Promise<DuressAlert | null>;
 }
 
+export interface IntakeRepository {
+  /** The patient's own words, kept beside the consult they booked. */
+  createConsultIntake(input: NewConsultIntake, tx?: Executor): Promise<ConsultIntake>;
+  findConsultIntake(consultId: string, tx?: Executor): Promise<ConsultIntake | null>;
+
+  createApplication(
+    input: NewDoctorApplication,
+    tx?: Executor,
+  ): Promise<DoctorApplication>;
+  listApplications(tx?: Executor): Promise<DoctorApplication[]>;
+  updateApplication(
+    id: string,
+    patch: Partial<DoctorApplication>,
+    tx?: Executor,
+  ): Promise<DoctorApplication | null>;
+}
+
 /** Write-only by contract — audit events are never updated or deleted. */
 export interface AuditRepository {
   record(input: {
-    actorId: string;
+    /**
+     * The doctor who acted, or null for an event with no clinician behind it —
+     * a patient booking from the public site. The column is foreign-keyed to
+     * `doctors`, so anything else must go in the payload.
+     */
+    actorId: string | null;
     actorName: string;
     eventType: string;
     entityType?: string;

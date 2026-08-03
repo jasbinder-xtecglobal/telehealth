@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import type { Executor } from "../../db/client.ts";
 import {
   consults,
@@ -97,12 +97,23 @@ export class DrizzleConsultRepository
     })) as (Consult & { doctor: NonNullable<ConsultAggregate["doctor"]> | null })[];
   }
 
-  async listClosedForDoctor(doctorId: string, tx?: Executor) {
+  async listClosedForDoctor(
+    doctorId: string,
+    range: { from: Date; to: Date } | null,
+    tx?: Executor,
+  ) {
     return (await this.exec(tx).query.consults.findMany({
-      where: and(eq(consults.doctorId, doctorId), eq(consults.status, "closed")),
+      where: and(
+        eq(consults.doctorId, doctorId),
+        eq(consults.status, "closed"),
+        ...(range
+          ? [gte(consults.endedAt, range.from), lte(consults.endedAt, range.to)]
+          : []),
+      ),
       with: { patient: true, billings: true },
       orderBy: [desc(consults.endedAt)],
-      limit: 200,
+      // A bounded range is already narrow; the cap only guards the open query.
+      limit: range ? 5_000 : 200,
     })) as never;
   }
 

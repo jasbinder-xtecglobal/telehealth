@@ -17,6 +17,7 @@ import { billings } from "./billing.ts";
 import { chatMessages } from "./collaboration.ts";
 import { emailVerificationTokens, sessions } from "./auth.ts";
 import { consults, noteRevisions } from "./consults.ts";
+import { consultIntake } from "./intake.ts";
 import { duressAlerts, visits } from "./dispatch.ts";
 import { doctorFilters, doctors, hiddenPatients, templates } from "./doctors.ts";
 import { patientAllergies, patients } from "./patients.ts";
@@ -69,6 +70,9 @@ export const consultsRelations = relations(consults, ({ one, many }) => ({
   documents: many(documents),
   billings: many(billings),
   revisions: many(noteRevisions),
+  // The foreign key lives on `consult_intake`, so only that side declares
+  // `fields`; this is the owned end of a one-to-one.
+  intake: one(consultIntake),
   // The reverse side (consults → visit) is deliberately not declared: the
   // foreign key lives on `visits`, and declaring `one()` with fields on both
   // sides leaves Drizzle unable to tell which side owns the relation.
@@ -181,5 +185,12 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   author: one(doctors, {
     fields: [chatMessages.authorId],
     references: [doctors.id],
+  }),
+}));
+
+export const consultIntakeRelations = relations(consultIntake, ({ one }) => ({
+  consult: one(consults, {
+    fields: [consultIntake.consultId],
+    references: [consults.id],
   }),
 }));

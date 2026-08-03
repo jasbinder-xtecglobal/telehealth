@@ -1,18 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
+import { unreadUpdateCount } from "@/features/updates/patch-notes.ts";
 import { money } from "@/shared/lib/format.ts";
 import { useTRPC } from "@/shared/lib/trpc.ts";
 
+/**
+ * Sidebar order mirrors the reference console. `badge` names a live counter
+ * the item paints; `external` opens outside the app entirely.
+ */
 const NAV = [
   { to: "/", label: "Home", end: true },
-  { to: "/inbox", label: "Inbox" },
+  { to: "/inbox", label: "Inbox", badge: "inbox" as const },
   { to: "/history", label: "Consult History" },
   { to: "/billing", label: "Billing" },
   { to: "/support", label: "Support" },
+  { to: "/updates", label: "Software Updates", badge: "updates" as const },
   { to: "/account", label: "My Account" },
+  { to: "/applications", label: "Doctor Applications", badge: "applications" as const },
   { to: "/panic", label: "Panic Button" },
 ];
+
+/**
+ * Therapeutic Guidelines. A licensed third-party product — the reference
+ * console links straight out to it rather than embedding it.
+ */
+const ETG_URL = "https://app.tg.org.au";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const trpc = useTRPC();
@@ -39,8 +52,27 @@ export function AppShell({ children }: { children: ReactNode }) {
     ...trpc.doctor.roster.queryOptions(),
     refetchInterval: 15_000,
   });
+  const inbox = useQuery({
+    ...trpc.doctor.inbox.queryOptions(),
+    refetchInterval: 30_000,
+  });
+  const applications = useQuery({
+    ...trpc.intake.applications.queryOptions(),
+    refetchInterval: 60_000,
+  });
 
   const s = stats.data;
+
+  // The unread marker is browser-local, so it has no query to invalidate.
+  // Reading it against the current location recomputes it on navigation,
+  // which is when it can actually have changed.
+  const location = useLocation();
+  const badges = {
+    inbox: inbox.data?.length ?? 0,
+    updates: location.pathname === "/updates" ? 0 : unreadUpdateCount(),
+    applications:
+      applications.data?.filter((a) => a.status === "submitted").length ?? 0,
+  };
 
   return (
     <div
@@ -92,24 +124,55 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-0 flex-1">
         {/* ---------------- sidebar ---------------- */}
-        <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-white">
+        <aside className="flex w-56 shrink-0 flex-col overflow-y-auto border-r border-line bg-white">
           <nav className="py-2">
-            {NAV.map((n) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.end}
-                className={({ isActive }) =>
-                  `block border-l-[3px] px-4 py-2 text-sm transition-colors ${
-                    isActive
-                      ? "border-brand bg-slate-50 font-medium text-brand-dark"
-                      : "border-transparent text-ink hover:bg-slate-50"
-                  }`
-                }
+            {NAV.map((n) => {
+              const count = n.badge ? badges[n.badge] : 0;
+              return (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  end={n.end}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 border-l-[3px] px-4 py-2 text-sm transition-colors ${
+                      isActive
+                        ? "border-brand bg-slate-50 font-medium text-brand-dark"
+                        : "border-transparent text-ink hover:bg-slate-50"
+                    }`
+                  }
+                >
+                  {n.label}
+                  {count > 0 && (
+                    <span
+                      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d13c31] px-1 text-[10px] font-bold text-white"
+                      title={`${count} awaiting your attention`}
+                    >
+                      {count > 99 ? "99+" : count}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+
+            <a
+              href={ETG_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 border-l-[3px] border-transparent px-4 py-2 text-sm text-ink hover:bg-slate-50"
+            >
+              eTG
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="text-muted"
               >
-                {n.label}
-              </NavLink>
-            ))}
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
+              </svg>
+            </a>
           </nav>
 
           <div className="mt-1 border-t border-line px-4 py-2">

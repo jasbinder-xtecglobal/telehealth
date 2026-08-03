@@ -1,3 +1,5 @@
+/* Sign-in screens only — see `.auth-theme` below. */
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -31,6 +33,75 @@ body {
 /* Doctor profile toggle: "Make font better" */
 .large-font {
   font-size: 16px;
+}
+
+/**
+ * Sign-in screens.
+ *
+ * These carry the public site's theme so a doctor arriving from the website's
+ * Login link lands somewhere that looks like the same organisation. Scoped to
+ * `.auth-theme` so the serif and the larger base size cannot reach the
+ * clinical screens, whose density is deliberate. The font is loaded at the
+ * top of this file — `@import` is only valid before any rule.
+ */
+.auth-theme {
+  font-family: "Outfit", var(--font-sans);
+  font-size: 15px;
+  color: #1a2b3c;
+}
+
+.auth-theme .auth-display {
+  font-family: "DM Serif Display", ui-serif, Georgia, serif;
+  font-weight: 400;
+}
+
+/* Restyles the shared form primitives in place, so Login, Signup and Verify
+   keep using the same components as the rest of the console. */
+.auth-theme input,
+.auth-theme select,
+.auth-theme textarea {
+  font-family: inherit;
+  border-radius: 0.75rem;
+  border-color: #e2ebf6;
+  background: #f5f9ff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.auth-theme input:focus,
+.auth-theme select:focus,
+.auth-theme textarea:focus {
+  border-color: #0a6ebd;
+  box-shadow: 0 0 0 3px rgb(10 110 189 / 0.18);
+}
+
+.auth-theme label > span:first-child {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a2b3c;
+}
+
+.auth-theme a {
+  color: #0a6ebd;
+  font-weight: 600;
+}
+
+/* The primary call to action. Marked explicitly rather than inferred from a
+   utility class, which would break the moment the palette moves. */
+.auth-theme .auth-cta {
+  border-radius: 1rem;
+  border-color: transparent;
+  background-image: linear-gradient(to right, #0a6ebd, #0099a8);
+  padding-block: 0.875rem;
+  font-weight: 700;
+}
+
+.auth-theme .auth-cta:disabled {
+  background-image: none;
+  background-color: #e2ebf6;
+  color: #94a3b8;
 }
 
 ::-webkit-scrollbar {

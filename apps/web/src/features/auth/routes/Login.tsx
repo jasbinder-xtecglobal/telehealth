@@ -105,6 +105,7 @@ export function Login() {
         <Button
           type="submit"
           variant="primary"
+          className="auth-cta"
           full
           disabled={login.isPending || !email || !password}
         >
