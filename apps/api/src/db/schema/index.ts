@@ -9,6 +9,7 @@ export * from "./patients.ts";
 export * from "./doctors.ts";
 export * from "./auth.ts";
 export * from "./consults.ts";
+export * from "./calls.ts";
 export * from "./intake.ts";
 export * from "./dispatch.ts";
 export * from "./reference.ts";

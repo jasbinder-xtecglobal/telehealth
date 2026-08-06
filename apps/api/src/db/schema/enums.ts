@@ -129,6 +129,25 @@ export const employmentPreference = pgEnum("employment_preference", [
 /** How the patient asked to be contacted about their booking. */
 export const contactMethod = pgEnum("contact_method", ["phone", "email", "sms"]);
 
+/**
+ * Real-time transport vendors under evaluation.
+ *
+ * The set is open by intent — no vendor has been chosen yet, and each is
+ * implemented as an independent adapter so one can be added or removed without
+ * touching the others. A value here does not imply an adapter exists; ask the
+ * provider registry what is actually installed and configured.
+ */
+export const callProvider = pgEnum("call_provider", [
+  "livekit",
+  "agora",
+  "twilio",
+  "zoom",
+]);
+
+/** Audio-only or audio plus video. Mirrors `consultPreference`, separately
+ * recorded because the doctor may escalate a phone consult to video mid-call. */
+export const callMode = pgEnum("call_mode", ["audio", "video"]);
+
 export type ConsultChannel = (typeof consultChannel.enumValues)[number];
 export type ConsultStatus = (typeof consultStatus.enumValues)[number];
 export type ConsultPreference = (typeof consultPreference.enumValues)[number];
@@ -145,3 +164,5 @@ export type AuState = (typeof auStateEnum.enumValues)[number];
 export type ApplicationStatus = (typeof applicationStatus.enumValues)[number];
 export type EmploymentPreference = (typeof employmentPreference.enumValues)[number];
 export type ContactMethod = (typeof contactMethod.enumValues)[number];
+export type CallProviderId = (typeof callProvider.enumValues)[number];
+export type CallMode = (typeof callMode.enumValues)[number];

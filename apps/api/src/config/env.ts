@@ -49,6 +49,20 @@ const schema = z.object({
    */
   COOKIE_SAMESITE: z.enum(["lax", "none"]).default("lax"),
 
+  /**
+   * LiveKit — the first of four real-time transports being trialled.
+   *
+   * Optional by design. Absent credentials must not stop the API booting: the
+   * provider registry reports LiveKit as unconfigured and the picker greys it
+   * out with the reason, rather than the whole workstation refusing to start
+   * over a vendor nobody has committed to yet.
+   *
+   * `LIVEKIT_URL` is the `wss://` endpoint; the secret never leaves the server.
+   */
+  LIVEKIT_URL: z.string().url().optional(),
+  LIVEKIT_API_KEY: z.string().min(1).optional(),
+  LIVEKIT_API_SECRET: z.string().min(1).optional(),
+
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 

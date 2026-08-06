@@ -488,6 +488,11 @@ async function main() {
     familyGroupId?: string;
     category: (typeof schema.symptomCategory.enumValues)[number];
     info: string;
+    /**
+     * Held at roughly half phone, half video. Both transports need testing on
+     * every reseed, and a queue weighted towards phone runs out of video cases
+     * before a session of call testing is finished.
+     */
     preference: "phone" | "video";
     waited: number;
     acuity?: number;
@@ -610,7 +615,7 @@ async function main() {
       postcode: "2000",
       category: "other_issues",
       info: "Every time I yawn, my cat yawns back. Are we syncing? Should I be concerned about a yawn epidemic?",
-      preference: "phone",
+      preference: "video",
       waited: 12,
       nkda: true,
     },
@@ -676,7 +681,7 @@ async function main() {
       postcode: "2601",
       category: "gut_related",
       info: "I think my thumb might be haunted. It twitches whenever I talk about ghost stories. PLEASE CONFIRM.",
-      preference: "phone",
+      preference: "video",
       waited: 12,
       nkda: true,
     },

@@ -14,6 +14,7 @@ import {
   referrals,
 } from "./artefacts.ts";
 import { billings } from "./billing.ts";
+import { callSessions } from "./calls.ts";
 import { chatMessages } from "./collaboration.ts";
 import { emailVerificationTokens, sessions } from "./auth.ts";
 import { consults, noteRevisions } from "./consults.ts";
@@ -70,6 +71,7 @@ export const consultsRelations = relations(consults, ({ one, many }) => ({
   documents: many(documents),
   billings: many(billings),
   revisions: many(noteRevisions),
+  callSessions: many(callSessions),
   // The foreign key lives on `consult_intake`, so only that side declares
   // `fields`; this is the owned end of a one-to-one.
   intake: one(consultIntake),
@@ -184,6 +186,17 @@ export const hiddenPatientsRelations = relations(hiddenPatients, ({ one }) => ({
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   author: one(doctors, {
     fields: [chatMessages.authorId],
+    references: [doctors.id],
+  }),
+}));
+
+export const callSessionsRelations = relations(callSessions, ({ one }) => ({
+  consult: one(consults, {
+    fields: [callSessions.consultId],
+    references: [consults.id],
+  }),
+  startedBy: one(doctors, {
+    fields: [callSessions.startedByDoctorId],
     references: [doctors.id],
   }),
 }));

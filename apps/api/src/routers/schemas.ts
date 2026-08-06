@@ -6,6 +6,8 @@
  */
 import { z } from "zod";
 import {
+  callMode,
+  callProvider,
   chatChannel,
   consultChannel,
   documentType,
@@ -24,6 +26,11 @@ export const channelInput = z.object({
 });
 
 export const chatChannelSchema = z.enum(chatChannel.enumValues);
+
+/** Validated against the enum, so a vendor added to the schema is accepted
+ *  without touching the router — and one removed is rejected at the boundary. */
+export const callModeSchema = z.enum(callMode.enumValues);
+export const callProviderSchema = z.enum(callProvider.enumValues);
 export const categorySchema = z.enum(symptomCategory.enumValues);
 
 export const reasonSchema = z

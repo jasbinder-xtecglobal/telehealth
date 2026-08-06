@@ -17,6 +17,8 @@ import {
 
 import { CryptoTokenAdapter } from "./integrations/auth/crypto-token.adapter.ts";
 import { ScryptPasswordHasher } from "./integrations/auth/scrypt-hasher.adapter.ts";
+import { LiveKitCallProvider } from "./integrations/call/livekit.adapter.ts";
+import { CallProviderRegistry } from "./integrations/call/provider-registry.ts";
 import { MockClaimingAdapter } from "./integrations/claiming/mock-claiming.adapter.ts";
 import { MockEmailAdapter } from "./integrations/email/mock-email.adapter.ts";
 import { MockEscriptAdapter } from "./integrations/escript/mock-escript.adapter.ts";
@@ -28,6 +30,7 @@ import { MockSummariserAdapter } from "./integrations/scribe/mock-summariser.ada
 import { MockSmsAdapter } from "./integrations/sms/mock-sms.adapter.ts";
 import { SystemClock } from "./integrations/system-clock.adapter.ts";
 import type {
+  CallProviderRegistryPort,
   ClaimingPort,
   ClockPort,
   EscriptPort,
@@ -47,6 +50,7 @@ import {
   DrizzleAuditRepository,
   DrizzleAuthRepository,
   DrizzleBillingRepository,
+  DrizzleCallRepository,
   DrizzleChatRepository,
   DrizzleConsultRepository,
   DrizzleDispatchRepository,
@@ -60,6 +64,7 @@ import type {
   AuditRepository,
   AuthRepository,
   BillingRepository,
+  CallRepository,
   ChatRepository,
   ConsultRepository,
   DispatchRepository,
@@ -71,6 +76,7 @@ import type {
 
 import { AuthService } from "./services/auth.service.ts";
 import { BillingService } from "./services/billing.service.ts";
+import { CallService } from "./services/call.service.ts";
 import { ChatService } from "./services/chat.service.ts";
 import { ConsultService } from "./services/consult.service.ts";
 import { DispatchService } from "./services/dispatch.service.ts";
@@ -94,6 +100,8 @@ export type Ports = {
   tokens: TokenPort;
   email: EmailPort;
   events: EventBusPort;
+  /** The installed call vendors. Empty is legal — the picker says so. */
+  callProviders: CallProviderRegistryPort;
 };
 
 export type Repositories = {
@@ -108,6 +116,7 @@ export type Repositories = {
   dispatch: DispatchRepository;
   auth: AuthRepository;
   intake: IntakeRepository;
+  calls: CallRepository;
 };
 
 export type Services = {
@@ -122,6 +131,7 @@ export type Services = {
   dispatch: DispatchService;
   auth: AuthService;
   intake: IntakeService;
+  call: CallService;
 };
 
 export type Container = {
@@ -166,6 +176,24 @@ export function createContainer(
     tokens: overrides.ports?.tokens ?? new CryptoTokenAdapter(),
     email: overrides.ports?.email ?? new MockEmailAdapter(clock),
     events: overrides.ports?.events ?? new InMemoryEventBus(),
+
+    /**
+     * Call transports under evaluation. This array is the entire registration
+     * surface: add a vendor by constructing its adapter here, remove one by
+     * deleting its line. Order here is the order the doctor sees.
+     *
+     * LiveKit is first. Agora, Twilio and Zoom will each arrive as one more
+     * adapter file and one more line — no other file changes.
+     */
+    callProviders:
+      overrides.ports?.callProviders ??
+      new CallProviderRegistry([
+        new LiveKitCallProvider({
+          url: env.LIVEKIT_URL,
+          apiKey: env.LIVEKIT_API_KEY,
+          apiSecret: env.LIVEKIT_API_SECRET,
+        }),
+      ]),
   };
 
   /* ---------------- repositories ---------------- */
@@ -184,6 +212,7 @@ export function createContainer(
       overrides.repositories?.dispatch ?? new DrizzleDispatchRepository(database),
     auth: overrides.repositories?.auth ?? new DrizzleAuthRepository(database),
     intake: overrides.repositories?.intake ?? new DrizzleIntakeRepository(database),
+    calls: overrides.repositories?.calls ?? new DrizzleCallRepository(database),
   };
 
   /* ---------------- services ---------------- */
@@ -195,8 +224,21 @@ export function createContainer(
     repositories.audit,
   );
 
+  // Built ahead of ConsultService, which asks it to hang up whatever vendor is
+  // carrying the consult when the consult closes.
+  const call = new CallService(
+    repositories.consults,
+    repositories.calls,
+    ports.callProviders,
+    repositories.audit,
+    ports.events,
+    ports.clock,
+    env.webOrigins[0] ?? "http://localhost:5173",
+  );
+
   const services: Services = {
     scribe,
+    call,
     queue: new QueueService(repositories.consults, repositories.doctors, ports.clock),
     consult: new ConsultService(
       repositories.consults,
@@ -211,6 +253,7 @@ export function createContainer(
       ports.events,
       ports.clock,
       tx,
+      call,
     ),
     prescribing: new PrescribingService(
       repositories.consults,

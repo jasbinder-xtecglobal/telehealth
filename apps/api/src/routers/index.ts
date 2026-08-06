@@ -1,5 +1,6 @@
 import { router } from "../trpc.ts";
 import { authRouter } from "./auth.router.ts";
+import { callRouter } from "./call.router.ts";
 import { chatRouter } from "./chat.router.ts";
 import { consultRouter } from "./consult.router.ts";
 import { dispatchRouter } from "./dispatch.router.ts";
@@ -12,6 +13,8 @@ export const appRouter = router({
   auth: authRouter,
   queue: queueRouter,
   consult: consultRouter,
+  // `call` is reserved by tRPC's router internals — the namespace is plural.
+  calls: callRouter,
   dispatch: dispatchRouter,
   doctor: doctorRouter,
   intake: intakeRouter,
