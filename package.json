@@ -13,6 +13,7 @@
     "dev:web": "pnpm --filter @telehealth/web dev",
     "dev:site": "pnpm --filter @telehealth/site dev",
     "build": "pnpm --filter \"./apps/*\" build",
+    "db:migrate": "pnpm --filter @telehealth/api db:migrate",
     "db:push": "pnpm --filter @telehealth/api db:push",
     "db:seed": "pnpm --filter @telehealth/api db:seed",
     "db:studio": "pnpm --filter @telehealth/api db:studio",
