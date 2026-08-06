@@ -3,6 +3,7 @@ export { DrizzleArtefactRepository } from "./drizzle/artefact.repository.ts";
 export { DrizzleAuditRepository } from "./drizzle/audit.repository.ts";
 export { DrizzleAuthRepository } from "./drizzle/auth.repository.ts";
 export { DrizzleBillingRepository } from "./drizzle/billing.repository.ts";
+export { DrizzleCallRepository } from "./drizzle/call.repository.ts";
 export { DrizzleChatRepository } from "./drizzle/chat.repository.ts";
 export { DrizzleConsultRepository } from "./drizzle/consult.repository.ts";
 export { DrizzleDispatchRepository } from "./drizzle/dispatch.repository.ts";

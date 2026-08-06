@@ -36,6 +36,7 @@ import type {
   IntakeRepository,
   PatientRepository,
 } from "../repositories/ports.ts";
+import type { CallService } from "./call.service.ts";
 import type { ScribeService } from "./scribe.service.ts";
 
 /**
@@ -59,6 +60,8 @@ export class ConsultService {
     private readonly events: EventBusPort,
     private readonly clock: ClockPort,
     private readonly tx: TransactionRunner,
+    /** Only so a closing consult cannot leave a call room open behind it. */
+    private readonly calls: CallService,
   ) {}
 
   private actor(doctor: Doctor) {
@@ -486,6 +489,11 @@ export class ConsultService {
       await this.billings.markSubmitted(consultId, at, tx);
       await this.consults.update(consultId, { status: "closed", endedAt: at }, tx);
     });
+
+    // After the artefacts are released, never before: tearing down a vendor
+    // room is best-effort network I/O and must not sit inside the transaction
+    // that guarantees the release is atomic.
+    await this.calls.endForConsult(consultId, "consult_closed");
 
     if (links.length > 0) {
       await this.sms.send({

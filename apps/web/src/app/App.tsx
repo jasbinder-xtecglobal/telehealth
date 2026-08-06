@@ -14,6 +14,7 @@ import { SoftwareUpdates } from "@/features/updates/routes/SoftwareUpdates.tsx";
 import { Login } from "@/features/auth/routes/Login.tsx";
 import { Signup } from "@/features/auth/routes/Signup.tsx";
 import { VerifyEmail } from "@/features/auth/routes/VerifyEmail.tsx";
+import { PatientJoin } from "@/features/call/routes/PatientJoin.tsx";
 import { ConsultConsole } from "@/features/consult/routes/ConsultConsole.tsx";
 import { PatientDetail } from "@/features/queue/routes/PatientDetail.tsx";
 import { WaitingRoom } from "@/features/queue/routes/WaitingRoom.tsx";
@@ -87,6 +88,9 @@ export function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify" element={<VerifyEmail />} />
+      {/* The patient's side of a call. Outside the shell and outside auth —
+          they have no account, and their join token lives in the fragment. */}
+      <Route path="/join" element={<PatientJoin />} />
 
       {/* -------- authenticated -------- */}
       <Route

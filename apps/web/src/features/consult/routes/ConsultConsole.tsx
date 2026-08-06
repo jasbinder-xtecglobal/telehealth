@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { CallDock } from "@/features/call/components/CallDock.tsx";
+import { CallProviderModal } from "@/features/call/components/CallProviderModal.tsx";
+import type { CallMode } from "@/features/call/providers/index.ts";
+import type { ActiveCall } from "@/features/call/types.ts";
 import {
   AddFamilyModal,
   BillModal,
@@ -49,6 +53,11 @@ export function ConsultConsole() {
   const [transcript, setTranscript] = useState(SAMPLE_TRANSCRIPT);
   const [consent, setConsent] = useState(false);
   const [familyOpen, setFamilyOpen] = useState(false);
+  // Which mode the picker was opened for, and the call it produced. The
+  // credentials are deliberately not cached anywhere — a refresh ends the call
+  // rather than replaying a stale token.
+  const [pickingCall, setPickingCall] = useState<CallMode | null>(null);
+  const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [endOpen, setEndOpen] = useState(false);
   const [endResult, setEndResult] = useState<{ links: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -444,7 +453,7 @@ export function ConsultConsole() {
             <span className="text-sm font-semibold">Patient chat</span>
             <div className="flex gap-3">
               <button
-                onClick={() => nudge.mutate({ consultId })}
+                onClick={() => setPickingCall("audio")}
                 className="text-[#2f7fd1]"
                 title="Call patient"
               >
@@ -452,15 +461,14 @@ export function ConsultConsole() {
                   <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2Z" />
                 </svg>
               </button>
+              {/* Always clickable. Whether video is actually available is the
+                  server's decision, and the picker renders that answer with the
+                  reason attached — re-deriving it here is how the button and
+                  the rule drift apart. */}
               <button
-                disabled={!c.patientJoinedAt}
-                onClick={() => nudge.mutate({ consultId })}
-                className={c.patientJoinedAt ? "text-[#2f7fd1]" : "text-slate-300"}
-                title={
-                  c.patientJoinedAt
-                    ? "Start video"
-                    : "Patient must join before video is available"
-                }
+                onClick={() => setPickingCall("video")}
+                className="text-[#2f7fd1]"
+                title="Start video"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4Z" />
@@ -468,6 +476,14 @@ export function ConsultConsole() {
               </button>
             </div>
           </div>
+
+          {activeCall && (
+            <CallDock
+              consultId={consultId}
+              call={activeCall}
+              onEnded={() => setActiveCall(null)}
+            />
+          )}
 
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <p className="mb-3 text-center text-xs text-muted">
@@ -506,6 +522,14 @@ export function ConsultConsole() {
       </div>
 
       {/* ---------------- modals ---------------- */}
+      <CallProviderModal
+        consultId={consultId}
+        mode={pickingCall ?? "audio"}
+        open={pickingCall !== null}
+        onClose={() => setPickingCall(null)}
+        onStarted={setActiveCall}
+      />
+
       <PrescribeModal consultId={consultId} open={openAction === "prescribe"} onClose={() => setOpenAction(null)} />
       <ReferModal consultId={consultId} open={openAction === "refer"} onClose={() => setOpenAction(null)} />
       <InvestigateModal consultId={consultId} open={openAction === "investigate"} onClose={() => setOpenAction(null)} />

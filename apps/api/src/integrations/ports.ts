@@ -174,6 +174,89 @@ export interface RoutingPort {
 }
 
 /* ------------------------------------------------------------------ *
+ * Real-time call transport (LiveKit / Agora / Twilio / Zoom)
+ *
+ * No vendor has been chosen. Each is a self-contained adapter behind this one
+ * port, registered in `container.ts` and nowhere else, so a vendor can be added
+ * or deleted without any other file changing. Nothing above this line may
+ * import a vendor SDK or branch on a provider id.
+ *
+ * The port deliberately does not model "a call in progress" — vendors disagree
+ * about what that means. It mints join credentials and tears a room down; the
+ * lifecycle record lives in `call_sessions`.
+ * ------------------------------------------------------------------ */
+import type { CallMode, CallProviderId } from "../db/schema/enums.ts";
+
+/**
+ * What one participant needs to join, in whatever form their client SDK wants.
+ *
+ * `token` is short-lived and scoped to a single room and identity. It is the
+ * only thing handed to the patient's browser, which is why it may never carry
+ * clinical data — vendors put JWT claims in places that end up in logs.
+ */
+export type CallCredentials = {
+  provider: CallProviderId;
+  /** Endpoint the client SDK connects to — a `wss://` URL for LiveKit. */
+  serverUrl: string;
+  token: string;
+  /** Who the far side sees. A role, never a patient identifier. */
+  identity: string;
+  displayName: string;
+  expiresAt: Date;
+};
+
+export type CallSessionHandle = {
+  roomName: string;
+  doctor: CallCredentials;
+  patient: CallCredentials;
+};
+
+export interface CallProviderPort {
+  readonly id: CallProviderId;
+  /** Vendor name as the doctor should see it in the picker. */
+  readonly label: string;
+  /** Modes this adapter actually implements, not what the vendor sells. */
+  readonly modes: readonly CallMode[];
+
+  /**
+   * False when credentials are absent. The picker greys the vendor out and
+   * shows `configHint` — during the trial an unconfigured vendor is worth
+   * displaying, because the fix is one environment variable.
+   */
+  isConfigured(): boolean;
+  /** Which variables are missing, for a developer. Null when configured. */
+  configHint(): string | null;
+
+  /**
+   * Mints join credentials for both sides of one room. Must be safe to call
+   * again for the same room — a reconnecting doctor gets fresh credentials,
+   * not a second room.
+   */
+  open(input: {
+    roomName: string;
+    mode: CallMode;
+    doctorName: string;
+    patientName: string;
+    ttlSeconds: number;
+  }): Promise<CallSessionHandle>;
+
+  /** Best-effort teardown. Must not throw if the room is already gone. */
+  close(roomName: string): Promise<void>;
+}
+
+/**
+ * The set of installed adapters.
+ *
+ * Registration order is display order. `get` returns undefined for a vendor
+ * that is not installed — the domain decides that this is a `NOT_FOUND`, not
+ * the registry.
+ */
+export interface CallProviderRegistryPort {
+  list(): readonly CallProviderPort[];
+  get(id: CallProviderId): CallProviderPort | undefined;
+}
+
+/* ------------------------------------------------------------------ *
  * Real-time fan-out
  * ------------------------------------------------------------------ */
 export type DomainEvent =

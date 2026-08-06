@@ -11,6 +11,7 @@
 import type { Executor } from "../db/client.ts";
 import type {
   Billing,
+  CallSession,
   ChatMessage,
   ClinicalDocument,
   Consult,
@@ -37,6 +38,8 @@ import type {
   Visit,
 } from "../db/schema/index.ts";
 import type {
+  CallMode,
+  CallProviderId,
   ChatChannelName,
   ConsultChannel,
   ConsultStatus,
@@ -374,6 +377,40 @@ export interface IntakeRepository {
     patch: Partial<DoctorApplication>,
     tx?: Executor,
   ): Promise<DoctorApplication | null>;
+}
+
+/**
+ * Call sessions.
+ *
+ * Vendor-neutral: the repository stores whichever provider carried the call and
+ * never interprets it, so adding or removing a vendor touches no SQL.
+ */
+export interface CallRepository {
+  /** The live session for a consult, if one is open. At most one at a time. */
+  findActive(consultId: string, tx?: Executor): Promise<CallSession | null>;
+
+  findById(id: string, tx?: Executor): Promise<CallSession | null>;
+
+  /** Every session on a consult, newest first — the per-consult call history. */
+  listForConsult(consultId: string, tx?: Executor): Promise<CallSession[]>;
+
+  open(
+    input: {
+      consultId: string;
+      provider: CallProviderId;
+      mode: CallMode;
+      roomName: string;
+      startedByDoctorId: string;
+    },
+    tx?: Executor,
+  ): Promise<CallSession>;
+
+  /** Idempotent: a session already ended keeps its original `endedAt`. */
+  close(
+    id: string,
+    input: { endedAt: Date; reason: string },
+    tx?: Executor,
+  ): Promise<CallSession | null>;
 }
 
 /** Write-only by contract — audit events are never updated or deleted. */
