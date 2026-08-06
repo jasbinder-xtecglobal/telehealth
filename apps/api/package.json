@@ -8,6 +8,7 @@
     "start": "node --experimental-transform-types src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-transform-types --test \"src/**/*.test.ts\"",
+    "db:migrate": "node --experimental-transform-types --env-file-if-exists=../../.env src/db/migrate.ts",
     "db:push": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio",
     "db:seed": "node --experimental-transform-types src/db/seed.ts"
