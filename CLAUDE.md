@@ -156,9 +156,14 @@ repository and service layers. Strip-only mode cannot handle them and fails at
 load with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`. All package scripts already use
 the correct flag — match it in any new script.
 
-**No Docker.** The database is Neon. `DATABASE_URL` in the repo-root `.env` is
-the only configuration required; `server/src/config/env.ts` validates it at
-startup and is the only file permitted to read `process.env`.
+**No Docker.** The database is Neon. `DATABASE_URL` in `server/.env` is the only
+configuration required; `server/src/config/env.ts` validates it at startup and
+is the only file permitted to read `process.env`.
+
+**Two env files, one per project.** `server/.env` holds everything secret — the
+database URL, the LiveKit key. The root `.env` holds only `VITE_*`, because Vite
+publishes those to the browser. Never move a secret into the root file to make
+something work; there is no such thing as a private variable there.
 
 The **WebSocket** Neon driver is deliberate — the HTTP driver cannot do
 transactions, and the consult-close path needs one.

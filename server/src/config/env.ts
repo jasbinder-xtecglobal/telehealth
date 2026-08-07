@@ -10,9 +10,10 @@ import { z } from "zod";
 
 // Node's built-in loader — no dotenv dependency. Absent in hosted
 // environments, where variables are injected directly.
-// `../.env` is the repository root, where the shared file lives; `.env` allows
-// a server-only override beside this project.
-for (const path of ["../.env", ".env"]) {
+// `.env` beside this project is the backend's own file and wins. `../.env` is
+// the frontend's and is only consulted as a fallback, for a checkout that still
+// keeps everything in one file at the repository root.
+for (const path of [".env", "../.env"]) {
   try {
     process.loadEnvFile(path);
   } catch {

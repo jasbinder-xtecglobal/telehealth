@@ -39,10 +39,12 @@ No Docker. No local database install.
 **2. Configure**
 
 ```bash
-cp .env.example .env
+cp .env.example .env               # frontend — VITE_ variables only
+cp server/.env.example server/.env # backend — secrets live here
 ```
 
-Paste your connection string into `DATABASE_URL`. It should look like:
+Paste your connection string into `DATABASE_URL` in **`server/.env`**. It should
+look like:
 
 ```
 DATABASE_URL=postgresql://user:pass@ep-xxxx-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require
