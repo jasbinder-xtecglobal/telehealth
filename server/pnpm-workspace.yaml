@@ -1,0 +1,12 @@
+# The server is its own pnpm project. This file exists only to permit esbuild's
+# postinstall — without it `pnpm install` exits non-zero and breaks the build.
+# esbuild arrives via drizzle-kit, which powers `db:studio`.
+#
+# Both spellings are present deliberately: pnpm 10 reads `onlyBuiltDependencies`,
+# pnpm 11 reads `allowBuilds`. Keeping both means the build does not depend on
+# which pnpm the deploy host happens to run.
+allowBuilds:
+  esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild

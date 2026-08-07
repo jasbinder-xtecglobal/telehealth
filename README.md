@@ -16,7 +16,7 @@ a mock adapter.
 
 | Layer | Choice |
 |---|---|
-| Monorepo | pnpm workspaces |
+| Layout | Frontend at the root, API in `server/` — two independent projects |
 | Web | Vite 6 · React 19 · TypeScript · Tailwind v4 · React Router 7 |
 | Data fetching | TanStack Query v5 · tRPC v11 — typed end to end, no codegen |
 | API | Node 24 · Fastify 5 · tRPC v11 · Zod |
@@ -39,10 +39,12 @@ No Docker. No local database install.
 **2. Configure**
 
 ```bash
-cp .env.example .env
+cp .env.example .env               # frontend — VITE_ variables only
+cp server/.env.example server/.env # backend — secrets live here
 ```
 
-Paste your connection string into `DATABASE_URL`. It should look like:
+Paste your connection string into `DATABASE_URL` in **`server/.env`**. It should
+look like:
 
 ```
 DATABASE_URL=postgresql://user:pass@ep-xxxx-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require
@@ -51,9 +53,10 @@ DATABASE_URL=postgresql://user:pass@ep-xxxx-pooler.ap-southeast-2.aws.neon.tech/
 **3. Install and load the schema**
 
 ```bash
-pnpm install
-pnpm db:push     # creates the tables
-pnpm db:seed     # loads the demo queue
+pnpm install                 # frontend, at the repository root
+pnpm --dir server install    # API
+pnpm db:migrate              # creates the tables, transactionally
+pnpm db:seed                 # loads the demo queue
 ```
 
 **4. Run**
@@ -90,6 +93,7 @@ also listed at <http://localhost:5173/verify>.
 | `pnpm dev` | Both apps |
 | `pnpm test` | Domain unit tests — **no database required** |
 | `pnpm typecheck` | Both apps |
+| `pnpm db:migrate` | Apply pending migrations |
 | `pnpm db:reset` | Push schema and reseed |
 | `pnpm db:studio` | Drizzle Studio against Neon |
 
@@ -111,7 +115,7 @@ container.ts    composition root — the only file naming concrete classes
 ```
 
 ```
-apps/api/src/
+server/src/
   config/env.ts           validated configuration; the only reader of process.env
   db/schema/              Drizzle tables split by domain + relations
   db/transaction-runner   transaction boundary abstraction
@@ -126,7 +130,7 @@ apps/api/src/
   routers/                thin tRPC procedures
   container.ts            dependency injection
 
-apps/web/src/
+src/
   app/                    routing composition
   features/               queue · consult · account · collaboration · admin
   shared/                 ui · lib · layout
