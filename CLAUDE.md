@@ -58,16 +58,19 @@ easier — raise it instead.
     patient both require one, and both are auditable.
 
 11. **Every clinical procedure requires a session.** `doctorProcedure` is the
-    only way to reach patient data. Two unauthenticated procedure types exist
-    and neither may read a patient record:
+    only way to reach patient data. Exactly one unauthenticated procedure type
+    exists, and it may not read a patient record:
     - `publicProcedure` — signup, login and verification only.
-    - `intakeProcedure` — public booking and doctor applications from the
-      website. Write-only, rate limited, and it may never create an account, a
-      session, a clinical artefact or a billing record. A patient booking has
-      no account to authenticate with; that is the entire exemption.
 
     Anything that reads or changes an existing patient's record goes on
     `doctorProcedure`, without exception.
+
+    The public website has moved to its own repository. Bookings and doctor
+    applications are created from the workstation in the meantime. When the
+    website returns it needs a public door reintroduced deliberately —
+    write-only, rate limited, and unable to create an account, a session, a
+    clinical artefact or a billing record. Widening an existing procedure is
+    not an acceptable substitute.
 
 12. **Verification gates sign-in.** A correct password on an unverified account
     yields no session. Passwords are scrypt-hashed; session and verification
@@ -96,12 +99,12 @@ domain/      repositories/ + integrations/
 
 | Layer | Path | May import | Must never |
 |---|---|---|---|
-| **Domain** | `apps/api/src/domain/` | Only types and other domain code | Touch a database, network, clock or framework |
-| **Repositories** | `apps/api/src/repositories/` | Drizzle, schema | Contain business rules |
-| **Integrations** | `apps/api/src/integrations/` | External SDKs | Contain business rules |
-| **Services** | `apps/api/src/services/` | Domain, repository ports, integration ports | Import Drizzle or tRPC |
-| **Routers** | `apps/api/src/routers/` | Services, Zod schemas | Contain conditionals or business rules |
-| **Composition** | `apps/api/src/container.ts` | Everything | — |
+| **Domain** | `server/src/domain/` | Only types and other domain code | Touch a database, network, clock or framework |
+| **Repositories** | `server/src/repositories/` | Drizzle, schema | Contain business rules |
+| **Integrations** | `server/src/integrations/` | External SDKs | Contain business rules |
+| **Services** | `server/src/services/` | Domain, repository ports, integration ports | Import Drizzle or tRPC |
+| **Routers** | `server/src/routers/` | Services, Zod schemas | Contain conditionals or business rules |
+| **Composition** | `server/src/container.ts` | Everything | — |
 
 ### Where does my code go?
 
@@ -140,7 +143,7 @@ domain/      repositories/ + integrations/
 
 | | |
 |---|---|
-| Monorepo | pnpm workspaces — `apps/api`, `apps/web` |
+| Layout | Two independent projects: the frontend at the repository root, the API in `server/`. No workspace — each installs its own dependencies |
 | API | Node 24, Fastify 5, tRPC v11, Zod, Drizzle ORM |
 | Database | **Neon** serverless Postgres over WebSocket (`drizzle-orm/neon-serverless`) |
 | Web | Vite 6, React 19, TypeScript, Tailwind v4, React Router 7, TanStack Query |
@@ -154,7 +157,7 @@ load with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`. All package scripts already use
 the correct flag — match it in any new script.
 
 **No Docker.** The database is Neon. `DATABASE_URL` in the repo-root `.env` is
-the only configuration required; `apps/api/src/config/env.ts` validates it at
+the only configuration required; `server/src/config/env.ts` validates it at
 startup and is the only file permitted to read `process.env`.
 
 The **WebSocket** Neon driver is deliberate — the HTTP driver cannot do
@@ -176,18 +179,31 @@ select conname from pg_constraint where conrelid = '<table>'::regclass and conty
 select indexname from pg_indexes where tablename = '<table>';
 ```
 
-For anything beyond a prototype, switch to `drizzle-kit generate` plus a
-migration runner so each change applies inside a transaction.
+**Prefer `pnpm db:migrate`.** Migrations in `server/migrations/` are applied in
+filename order, each inside a transaction, and recorded in `schema_migrations` —
+so a failure changes nothing and re-running is a no-op. Add a schema change as a
+new numbered `.sql` file there, written idempotently, rather than reaching for
+`push`.
 
 ## Commands
 
+All are run from the repository root; the `server` ones delegate.
+
 ```bash
-pnpm dev            # api :4000 + web :5173
+pnpm install        # frontend. The API installs separately: pnpm --dir server install
+pnpm dev            # api :4001 + web :5173, in parallel
 pnpm test           # domain unit tests — no database required
-pnpm typecheck      # both apps
-pnpm db:push        # push schema to Neon
+pnpm typecheck      # frontend and API
+pnpm db:migrate     # apply pending migrations, transactionally
 pnpm db:seed        # load the demo queue
+pnpm db:push        # drizzle-kit push — prefer db:migrate, see the warning above
 pnpm db:reset       # push + seed
+```
+
+Point a migration at another database without editing anything:
+
+```bash
+DATABASE_URL=<other> pnpm db:migrate
 ```
 
 Always run `pnpm typecheck` and `pnpm test` before reporting work complete.
@@ -197,7 +213,7 @@ Always run `pnpm typecheck` and `pnpm test` before reporting work complete.
 ## Web conventions
 
 ```
-apps/web/src/
+src/
   app/                    routing composition
   features/<feature>/     components/ and routes/ owned by that feature
   shared/ui/              presentational primitives, no data fetching

@@ -18,7 +18,7 @@ invariants there override anything in this skill.
 Answer these three, in order:
 
 1. **Is there a new rule about whether something is allowed?**
-   → a pure function in `apps/api/src/domain/<area>/*.policy.ts`, plus a test.
+   → a pure function in `server/src/domain/<area>/*.policy.ts`, plus a test.
 2. **Does it read or write the database?**
    → a method on a repository interface, then a Drizzle implementation.
 3. **Does it call anything outside this process?**
@@ -31,7 +31,7 @@ else. Do that and stop.
 
 ### 1. Schema — only if new tables or columns are needed
 
-Add to the right domain module under `apps/api/src/db/schema/`:
+Add to the right domain module under `server/src/db/schema/`:
 `patients` · `doctors` · `consults` · `reference` · `artefacts` · `billing` ·
 `collaboration` · `audit`.
 
@@ -45,8 +45,8 @@ Add to the right domain module under `apps/api/src/db/schema/`:
 ### 2. Domain policy — the rules, pure
 
 ```
-apps/api/src/domain/<area>/<name>.policy.ts
-apps/api/src/domain/<area>/<name>.policy.test.ts
+server/src/domain/<area>/<name>.policy.ts
+server/src/domain/<area>/<name>.policy.test.ts
 ```
 
 - Plain functions over plain data. No Drizzle, no `fetch`, no `new Date()` —
@@ -79,7 +79,7 @@ apps/api/src/domain/<area>/<name>.policy.test.ts
 
 ### 5. Service — the orchestration
 
-`apps/api/src/services/<name>.service.ts`
+`server/src/services/<name>.service.ts`
 
 - Constructor takes **interfaces only**. Never import `drizzle-orm` or `@trpc/*`.
 - Ask the domain whether it is allowed, ask repositories to read and write, ask
@@ -91,13 +91,13 @@ apps/api/src/domain/<area>/<name>.policy.test.ts
 
 ### 6. Container — the wiring
 
-Register new repositories, ports and services in `apps/api/src/container.ts`.
+Register new repositories, ports and services in `server/src/container.ts`.
 This is the **only** file allowed to contain `new SomeAdapter()`. Add the type
 to `Ports`, `Repositories` or `Services` so overrides stay typed.
 
 ### 7. Router — transport only
 
-`apps/api/src/routers/<area>.router.ts`
+`server/src/routers/<area>.router.ts`
 
 - Put the Zod schema in `routers/schemas.ts` if it is reused.
 - Each procedure is a **one-line delegation** to a service.
@@ -107,7 +107,7 @@ to `Ports`, `Repositories` or `Services` so overrides stay typed.
 
 ### 8. Web
 
-- Feature code lives in `apps/web/src/features/<feature>/`.
+- Feature code lives in `src/features/<feature>/`.
 - Shared presentational pieces go in `shared/ui`, which must stay free of tRPC.
 - Import across features with the `@/` alias.
 - Server state is TanStack Query — do not copy it into `useState`.
